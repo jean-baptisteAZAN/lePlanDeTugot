@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, StyleSheet, Text, TextInput } from 'react-native';
+import { KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { StampCollage } from '@/components/StampCollage';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useIntro } from '@/features/intro/IntroProvider';
 import { colors, fonts, radius, spacing, stroke } from '@/theme';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
+  const { replay } = useIntro();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -66,6 +68,9 @@ export default function LoginScreen() {
           disabled={!canSubmit}
           style={styles.submit}
         />
+        <Pressable onPress={replay} hitSlop={8} accessibilityRole="button" style={styles.replay}>
+          <Text style={styles.replayText}>Revoir l’intro</Text>
+        </Pressable>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -116,5 +121,15 @@ const styles = StyleSheet.create({
   },
   submit: {
     marginTop: spacing.sm,
+  },
+  replay: {
+    alignSelf: 'center',
+    marginTop: spacing.md,
+  },
+  replayText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.cobalt,
+    textDecorationLine: 'underline',
   },
 });

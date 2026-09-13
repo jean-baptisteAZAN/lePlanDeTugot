@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
+import { IntroProvider, useIntro } from '@/features/intro/IntroProvider';
 import { PlacesProvider } from '@/features/places/PlacesProvider';
 import { usePushSetup } from '@/features/push/usePushSetup';
 import { UsersProvider } from '@/features/users/UsersProvider';
@@ -17,22 +18,25 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <UsersProvider>
-        <PlacesProvider>
-          <RootNavigator />
-        </PlacesProvider>
-      </UsersProvider>
-      <StatusBar style="dark" />
-    </AuthProvider>
+    <IntroProvider>
+      <AuthProvider>
+        <UsersProvider>
+          <PlacesProvider>
+            <RootNavigator />
+          </PlacesProvider>
+        </UsersProvider>
+        <StatusBar style="dark" />
+      </AuthProvider>
+    </IntroProvider>
   );
 }
 
 function RootNavigator() {
   usePushSetup();
   const { user, initializing } = useAuth();
+  const { seen } = useIntro();
 
-  if (initializing) {
+  if (initializing || seen === null) {
     return <CenteredMessage loading text="" />;
   }
 
@@ -48,10 +52,13 @@ function RootNavigator() {
         headerTitleStyle: { fontFamily: fonts.display, fontSize: 18, color: colors.ink },
       }}
     >
-      <Stack.Protected guard={!loggedIn}>
+      <Stack.Protected guard={!seen}>
+        <Stack.Screen name="intro" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Protected guard={seen && !loggedIn}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
       </Stack.Protected>
-      <Stack.Protected guard={loggedIn}>
+      <Stack.Protected guard={seen && loggedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="place/new"
