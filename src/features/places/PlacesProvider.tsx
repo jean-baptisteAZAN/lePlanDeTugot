@@ -18,18 +18,24 @@ type PlacesSnapshot = {
 
 const PlacesContext = createContext<PlacesState | null>(null);
 
+const EMPTY_SNAPSHOT: PlacesSnapshot = { uid: null, places: [], error: null };
+
 export function PlacesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
-  const [snapshot, setSnapshot] = useState<PlacesSnapshot>({ uid: null, places: [], error: null });
+  const [snapshot, setSnapshot] = useState<PlacesSnapshot>(EMPTY_SNAPSHOT);
 
   useEffect(() => {
     if (!uid) return;
-    return subscribePlaces(
+    const unsubscribe = subscribePlaces(
       (places) => setSnapshot({ uid, places, error: null }),
       (error) =>
         setSnapshot((previous) => ({ uid, places: previous.uid === uid ? previous.places : [], error })),
     );
+    return () => {
+      unsubscribe();
+      setSnapshot(EMPTY_SNAPSHOT);
+    };
   }, [uid]);
 
   const value = useMemo<PlacesState>(() => {
