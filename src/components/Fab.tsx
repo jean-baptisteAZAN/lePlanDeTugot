@@ -2,16 +2,17 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { colors, spacing } from '@/theme';
+import { colors, hardShadow, spacing } from '@/theme';
 
 export function Fab() {
   return (
     <Pressable
       accessibilityLabel="Ajouter un lieu"
+      accessibilityRole="button"
       onPress={() => router.push('/place/new')}
       style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
     >
-      <Ionicons name="add" size={30} color={colors.surface} />
+      <Ionicons name="add" size={32} color={colors.surface} />
     </Pressable>
   );
 }
@@ -21,19 +22,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: spacing.lg,
     bottom: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
+    width: 58,
+    height: 58,
+    borderRadius: 16,
+    backgroundColor: colors.tangerine,
+    borderWidth: 2,
+    borderColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    boxShadow: hardShadow,
+    transform: [{ rotate: '-8deg' }],
   },
   pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.96 }],
+    transform: [{ rotate: '-8deg' }, { scale: 0.94 }],
   },
 });

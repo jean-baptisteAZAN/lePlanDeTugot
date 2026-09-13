@@ -1,10 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RatingStars } from '@/components/RatingStars';
-import { StatusBadge } from '@/components/StatusBadge';
+import { Stamp } from '@/components/Stamp';
+import { PlusOne } from '@/features/places/PlusOne';
 import type { Place } from '@/features/places/types';
-import { WishHeart } from '@/features/places/WishHeart';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, stroke } from '@/theme';
+
+const PERFORATION = [0, 1, 2, 3, 4, 5, 6, 7];
 
 type Props = {
   place: Place;
@@ -16,7 +18,7 @@ type Props = {
 
 export function PlaceRow({ place, myUid, addedBy, onPress, onPressStatus }: Props) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.ticket, pressed && styles.pressed]}>
       <View style={styles.main}>
         <Text style={styles.name} numberOfLines={1}>
           {place.name}
@@ -24,45 +26,72 @@ export function PlaceRow({ place, myUid, addedBy, onPress, onPressStatus }: Prop
         <Text style={styles.meta} numberOfLines={1}>
           {addedBy ? `Ajouté par ${addedBy}` : place.address}
         </Text>
+        {place.status === 'done' && place.rating !== null ? (
+          <RatingStars value={place.rating} size={12} />
+        ) : (
+          <PlusOne place={place} myUid={myUid} />
+        )}
       </View>
-      <WishHeart place={place} myUid={myUid} />
-      <View style={styles.side}>
-        <StatusBadge status={place.status} onPress={onPressStatus} />
-        {place.status === 'done' && place.rating !== null ? <RatingStars value={place.rating} size={12} /> : null}
+      <View style={styles.perforation}>
+        {PERFORATION.map((hole) => (
+          <View key={hole} style={styles.hole} />
+        ))}
+      </View>
+      <View style={styles.stub}>
+        <Stamp status={place.status} rating={place.rating} onPress={onPressStatus} />
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  ticket: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+    alignItems: 'stretch',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.sm,
+    borderWidth: stroke,
+    borderColor: colors.ink,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
   },
   pressed: {
-    opacity: 0.7,
+    opacity: 0.8,
   },
   main: {
     flex: 1,
-    gap: 2,
+    justifyContent: 'center',
+    gap: 3,
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
   },
   name: {
+    fontFamily: fonts.heavy,
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    color: colors.ink,
   },
   meta: {
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: colors.textMuted,
+    color: colors.inkMuted,
   },
-  side: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
+  perforation: {
+    width: 2,
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    paddingVertical: 6,
+  },
+  hole: {
+    width: 1.5,
+    height: 5,
+    borderRadius: 1,
+    backgroundColor: colors.inkFaint,
+  },
+  stub: {
+    width: 74,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
   },
 });

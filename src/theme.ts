@@ -1,18 +1,40 @@
+const INK = '#1C1B22';
+
 export const colors = {
-  background: '#FAF7F2',
+  paper: '#F3F5EF',
   surface: '#FFFFFF',
-  text: '#1F1B16',
-  textMuted: '#7A7068',
-  border: '#E8E1D8',
-  primary: '#C2410C',
-  todo: '#2563EB',
-  todoSoft: '#DBEAFE',
-  done: '#15803D',
-  doneSoft: '#DCFCE7',
-  danger: '#B91C1C',
-  star: '#F59E0B',
-  heart: '#E11D48',
+  ink: INK,
+  inkMuted: 'rgba(28, 27, 34, 0.62)',
+  inkFaint: 'rgba(28, 27, 34, 0.38)',
+  cobalt: '#2E4BFF',
+  tangerine: '#FF7A1A',
+  mint: '#3DD6A0',
+  lemon: '#FFE14D',
+  danger: '#D92D20',
+  todo: '#FF7A1A',
+  done: '#2E4BFF',
+  background: '#F3F5EF',
+  text: INK,
+  textMuted: 'rgba(28, 27, 34, 0.62)',
+  border: 'rgba(28, 27, 34, 0.38)',
+  primary: '#2E4BFF',
+  todoSoft: '#FFFFFF',
+  doneSoft: '#FFFFFF',
+  star: '#FF7A1A',
+  heart: '#FF7A1A',
 } as const;
+
+export const fonts = {
+  display: 'BagelFatOne_400Regular',
+  regular: 'DMSans_400Regular',
+  medium: 'DMSans_500Medium',
+  bold: 'DMSans_700Bold',
+  heavy: 'DMSans_800ExtraBold',
+} as const;
+
+export const stroke = 1.5;
+
+export const hardShadow = `3px 4px 0px ${INK}`;
 
 export const spacing = {
   xs: 4,
@@ -23,7 +45,7 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 20,
+  sm: 6,
+  md: 10,
+  lg: 14,
 } as const;

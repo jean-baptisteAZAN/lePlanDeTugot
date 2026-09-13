@@ -16,11 +16,12 @@ export function RatingStars({ value, onChange, size = 16 }: Props) {
   return (
     <View style={styles.row}>
       {VALUES.map((star) => {
+        const filled = value !== null && star <= value;
         const icon = (
           <Ionicons
-            name={value !== null && star <= value ? 'star' : 'star-outline'}
+            name={filled ? 'star' : 'star-outline'}
             size={size}
-            color={colors.star}
+            color={filled ? colors.tangerine : colors.inkFaint}
           />
         );
         if (!onChange) {

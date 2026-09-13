@@ -6,9 +6,16 @@ import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { PlacesProvider } from '@/features/places/PlacesProvider';
 import { usePushSetup } from '@/features/push/usePushSetup';
 import { UsersProvider } from '@/features/users/UsersProvider';
-import { colors } from '@/theme';
+import { useAppFonts } from '@/lib/useAppFonts';
+import { colors, fonts } from '@/theme';
 
 export default function RootLayout() {
+  const fontsReady = useAppFonts();
+
+  if (!fontsReady) {
+    return null;
+  }
+
   return (
     <AuthProvider>
       <UsersProvider>
@@ -32,7 +39,15 @@ function RootNavigator() {
   const loggedIn = user !== null;
 
   return (
-    <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
+    <Stack
+      screenOptions={{
+        contentStyle: { backgroundColor: colors.paper },
+        headerStyle: { backgroundColor: colors.paper },
+        headerShadowVisible: false,
+        headerTintColor: colors.ink,
+        headerTitleStyle: { fontFamily: fonts.display, fontSize: 18, color: colors.ink },
+      }}
+    >
       <Stack.Protected guard={!loggedIn}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
       </Stack.Protected>

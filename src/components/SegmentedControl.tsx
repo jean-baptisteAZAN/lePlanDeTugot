@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, stroke } from '@/theme';
 
 type Option<T extends string> = {
   value: T;
@@ -22,6 +22,8 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
           <Pressable
             key={option.value}
             onPress={() => onChange(option.value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
             style={[styles.segment, selected && styles.segmentSelected]}
           >
             <Text style={[styles.label, selected && styles.labelSelected]}>{option.label}</Text>
@@ -35,25 +37,28 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: colors.border,
-    borderRadius: radius.sm,
-    padding: 2,
+    gap: 3,
+    padding: 3,
+    backgroundColor: colors.surface,
+    borderWidth: stroke,
+    borderColor: colors.ink,
+    borderRadius: radius.md,
   },
   segment: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: spacing.sm,
-    borderRadius: radius.sm - 2,
+    borderRadius: radius.md - 3,
   },
   segmentSelected: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.mint,
   },
   label: {
-    color: colors.textMuted,
-    fontWeight: '500',
+    fontFamily: fonts.display,
+    fontSize: 14,
+    color: colors.inkMuted,
   },
   labelSelected: {
-    color: colors.text,
-    fontWeight: '600',
+    color: colors.ink,
   },
 });
