@@ -14,6 +14,16 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "plugins": ["expo-router", "expo-status-bar", "expo-notifications"]
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1600fa5c-c410-4cda-a9f5-eee15370631a"
+      }
+    },
+    "owner": "jbazan"
   }
 }
