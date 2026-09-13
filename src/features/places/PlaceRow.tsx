@@ -4,7 +4,7 @@ import { RatingStars } from '@/components/RatingStars';
 import { Stamp } from '@/components/Stamp';
 import { PlusOne } from '@/features/places/PlusOne';
 import type { Place } from '@/features/places/types';
-import { colors, fonts, radius, spacing, stroke } from '@/theme';
+import { colors, fonts, hardShadow, radius, spacing, stroke } from '@/theme';
 
 const PERFORATION = [0, 1, 2, 3, 4, 5, 6, 7];
 
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     borderWidth: stroke,
     borderColor: colors.ink,
     marginBottom: spacing.md,
-    overflow: 'hidden',
+    boxShadow: hardShadow,
   },
   pressed: {
     opacity: 0.8,
