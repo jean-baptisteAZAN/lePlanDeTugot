@@ -3,7 +3,7 @@ import * as Crypto from 'expo-crypto';
 
 import { env } from '@/lib/env';
 
-const BASE_URL = 'https://places.googleapis.com/v1';
+export const BASE_URL = 'https://places.googleapis.com/v1';
 const PARIS_CENTER = { latitude: 48.8566, longitude: 2.3522 };
 const DETAILS_FIELD_MASK = 'id,displayName,formattedAddress,location,types,primaryType';
 
@@ -49,7 +49,7 @@ export function newSessionToken(): string {
   return Crypto.randomUUID();
 }
 
-function buildHeaders(fieldMask?: string): Record<string, string> {
+export function buildHeaders(fieldMask?: string): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'X-Goog-Api-Key': env.googlePlacesApiKey,
