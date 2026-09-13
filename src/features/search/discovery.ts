@@ -17,7 +17,7 @@ export type DiscoveredPlace = {
   types: string[];
 };
 
-type LatLng = { latitude: number; longitude: number };
+export type LatLng = { latitude: number; longitude: number };
 
 type NearbyResponse = {
   places?: {
@@ -42,6 +42,14 @@ const DISCOVERY_TYPES: Record<DiscoveryCategory, readonly string[]> = {
   activite: ['amusement_center', 'bowling_alley', 'spa', 'karaoke', 'park'],
   culture: ['museum', 'art_gallery', 'performing_arts_theater', 'movie_theater', 'concert_hall', 'opera_house'],
 };
+
+export function isDiscoveryCategory(category: CategoryKey): category is DiscoveryCategory {
+  return category !== 'autre';
+}
+
+export function categoryTypes(category: DiscoveryCategory): readonly string[] {
+  return DISCOVERY_TYPES[category];
+}
 
 const ARRONDISSEMENT_CENTERS: readonly LatLng[] = [
   { latitude: 48.8625, longitude: 2.3364 },
@@ -100,7 +108,11 @@ function typesFor(categories: readonly DiscoveryCategory[]): string[] {
   return [...new Set(selected.flatMap((category) => DISCOVERY_TYPES[category]))];
 }
 
-async function searchNearby(center: LatLng, includedTypes: readonly string[]): Promise<DiscoveredPlace[]> {
+export async function searchNearby(
+  center: LatLng,
+  includedTypes: readonly string[],
+  radius = SEARCH_RADIUS_METERS,
+): Promise<DiscoveredPlace[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let response: Response;
@@ -114,7 +126,7 @@ async function searchNearby(center: LatLng, includedTypes: readonly string[]): P
         rankPreference: 'POPULARITY',
         languageCode: 'fr',
         regionCode: 'fr',
-        locationRestriction: { circle: { center, radius: SEARCH_RADIUS_METERS } },
+        locationRestriction: { circle: { center, radius } },
       }),
       signal: controller.signal,
     });
