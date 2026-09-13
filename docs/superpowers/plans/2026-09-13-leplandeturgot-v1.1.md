@@ -82,9 +82,22 @@ src/app/(tabs)/_layout.tsx                modify: dice header button
 src/app/(tabs)/index.tsx                  modify: myUid, "Envie à deux" chip
 src/app/place/new.tsx                     modify: cancel before first pick (F5)
 src/app/place/[id].tsx                    modify: existence check (F1), heart row
-src/app/place/random.tsx                  create: random picker modal
+src/app/place/random.tsx                  create: random picker modal (Task 4: mode switch only)
 firestore.rules                           modify: likedBy validation
+src/features/search/googlePlaces.ts       modify (Task 4): export BASE_URL, buildHeaders
+src/features/search/discovery.ts          create (Task 4): Nearby Search discovery
+src/features/search/DiscoveryPanel.tsx    create (Task 4): discovery UI
+src/features/places/IdeasPanel.tsx        create (Task 4): "Nos idées" UI moved out of random.tsx
+src/features/places/pickerStyles.ts       create (Task 4): styles shared by both panels
 ```
+
+## Design summary — Task 4 "Découverte" mode (approved in chat 2026-09-13)
+
+- The "On fait quoi ce soir ?" modal gets a segmented control "Nos idées" / "Découverte" at the top. "Nos idées" = Task 3 picker unchanged.
+- Découverte: category chips (same as Nos idées minus "Autre"; none selected = all), no shared-wish switch. Button "Découvrir" → card: category, name, address, "★ 4,6 · 1 234 avis", link "Voir sur Google Maps", buttons "Un autre" and "Ajouter à nos idées" (creates a `todo` place + partner push; label becomes "Ajout…" then "Ajouté").
+- Search: Google Places API (New) Nearby Search, zone = all Paris. Each draw picks a random arrondissement center (radius 1500 m), `rankPreference: POPULARITY`, keeps places with rating ≥ 4.3 and ≥ 150 reviews, excludes places already in the app (same `googlePlaceId`) and places already proposed in this session, picks one at random. Up to 3 arrondissements per draw; none → "Rien trouvé" / "Réessaie ou change de catégorie."
+- Category → Google types (verified in Table A): resto `restaurant`; bar `bar`, `wine_bar`, `pub`, `cocktail_bar`; café `cafe`, `coffee_shop`, `tea_house`; activité `amusement_center`, `bowling_alley`, `spa`, `karaoke`, `park`; culture `museum`, `art_gallery`, `performing_arts_theater`, `movie_theater`, `concert_hall`, `opera_house`.
+- Out of scope: open-now filter, photos, GPS.
 
 ---
 
@@ -1282,6 +1295,747 @@ git add src/features/places/random.ts src/app/place/random.tsx src/app/_layout.t
 git status
 git commit -m "$(cat <<'EOF'
 feat: random tonight picker with category and shared wish filters
+
+Co-Authored-By: <implementer model name> <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015rchfifkpwEqh7Q8UBBgMT
+EOF
+)"
+```
+
+---
+
+### Task 4: "Découverte" mode — well-rated Paris places from Google
+
+**Files:**
+- Modify: `src/features/search/googlePlaces.ts` (export two existing symbols)
+- Create: `src/features/search/discovery.ts`, `src/features/places/pickerStyles.ts`, `src/features/places/IdeasPanel.tsx`, `src/features/search/DiscoveryPanel.tsx`
+- Modify (full replace): `src/app/place/random.tsx`
+
+**Interfaces:**
+- Consumes: `buildHeaders(fieldMask?: string): Record<string, string>` and `BASE_URL` from `@/features/search/googlePlaces` (existing, made exported here); `createPlace(input: PlaceInput): Promise<string>`; `notifyPartner(place: Pick<Place, 'id' | 'name' | 'category'>, users: readonly AppUser[], myUid: string): Promise<void>`; `suggestCategory(primaryType, types)`; `CATEGORIES`, `CATEGORY_BY_KEY`; `useAuth`, `usePlaces`, `useUsers`; `pickRandom`, `randomCandidates`, `isSharedWish`, `ToggleChip`, `SegmentedControl`; theme tokens
+- Produces:
+  - `@/features/search/discovery`: `DiscoveryCategory = Exclude<CategoryKey, 'autre'>`, `DISCOVERY_CATEGORY_KEYS: readonly DiscoveryCategory[]`, `DiscoveredPlace`, `discoverPlace(categories: readonly DiscoveryCategory[], excludedIds: ReadonlySet<string>): Promise<DiscoveredPlace | null>`, `discoveredCategory(place: DiscoveredPlace): CategoryKey`
+  - `pickerStyles` (StyleSheet) from `@/features/places/pickerStyles`
+  - `IdeasPanel()` from `@/features/places/IdeasPanel`, `DiscoveryPanel()` from `@/features/search/DiscoveryPanel`
+
+- [ ] **Step 1: Export helpers in `src/features/search/googlePlaces.ts`**
+
+Change `const BASE_URL = ...` to `export const BASE_URL = ...` and `function buildHeaders(` to `export function buildHeaders(`. Nothing else changes.
+
+- [ ] **Step 2: Create `src/features/search/discovery.ts`**
+
+```ts
+import { suggestCategory } from '@/features/places/categories';
+import type { CategoryKey } from '@/features/places/types';
+import { BASE_URL, buildHeaders } from '@/features/search/googlePlaces';
+
+export type DiscoveryCategory = Exclude<CategoryKey, 'autre'>;
+
+export type DiscoveredPlace = {
+  googlePlaceId: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  rating: number;
+  userRatingCount: number;
+  googleMapsUri: string | null;
+  primaryType: string | null;
+  types: string[];
+};
+
+type LatLng = { latitude: number; longitude: number };
+
+type NearbyResponse = {
+  places?: {
+    id: string;
+    displayName?: { text: string };
+    formattedAddress?: string;
+    location?: LatLng;
+    rating?: number;
+    userRatingCount?: number;
+    googleMapsUri?: string;
+    primaryType?: string;
+    types?: string[];
+  }[];
+};
+
+export const DISCOVERY_CATEGORY_KEYS: readonly DiscoveryCategory[] = ['resto', 'bar', 'cafe', 'activite', 'culture'];
+
+const DISCOVERY_TYPES: Record<DiscoveryCategory, readonly string[]> = {
+  resto: ['restaurant'],
+  bar: ['bar', 'wine_bar', 'pub', 'cocktail_bar'],
+  cafe: ['cafe', 'coffee_shop', 'tea_house'],
+  activite: ['amusement_center', 'bowling_alley', 'spa', 'karaoke', 'park'],
+  culture: ['museum', 'art_gallery', 'performing_arts_theater', 'movie_theater', 'concert_hall', 'opera_house'],
+};
+
+const ARRONDISSEMENT_CENTERS: readonly LatLng[] = [
+  { latitude: 48.8625, longitude: 2.3364 },
+  { latitude: 48.8683, longitude: 2.3428 },
+  { latitude: 48.863, longitude: 2.3601 },
+  { latitude: 48.8543, longitude: 2.3576 },
+  { latitude: 48.8445, longitude: 2.3497 },
+  { latitude: 48.8491, longitude: 2.3326 },
+  { latitude: 48.8562, longitude: 2.3121 },
+  { latitude: 48.8727, longitude: 2.3125 },
+  { latitude: 48.877, longitude: 2.3375 },
+  { latitude: 48.8761, longitude: 2.3607 },
+  { latitude: 48.8591, longitude: 2.3799 },
+  { latitude: 48.8409, longitude: 2.3876 },
+  { latitude: 48.8283, longitude: 2.3622 },
+  { latitude: 48.8292, longitude: 2.3266 },
+  { latitude: 48.8401, longitude: 2.2931 },
+  { latitude: 48.8637, longitude: 2.2769 },
+  { latitude: 48.8873, longitude: 2.3067 },
+  { latitude: 48.8925, longitude: 2.3484 },
+  { latitude: 48.8871, longitude: 2.3847 },
+  { latitude: 48.8634, longitude: 2.4011 },
+];
+
+const SEARCH_RADIUS_METERS = 1500;
+const MIN_RATING = 4.3;
+const MIN_RATING_COUNT = 150;
+const MAX_ATTEMPTS = 3;
+const NEARBY_FIELD_MASK = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.location',
+  'places.rating',
+  'places.userRatingCount',
+  'places.googleMapsUri',
+  'places.primaryType',
+  'places.types',
+].join(',');
+
+function shuffled<T>(items: readonly T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function typesFor(categories: readonly DiscoveryCategory[]): string[] {
+  const selected = categories.length > 0 ? categories : DISCOVERY_CATEGORY_KEYS;
+  return [...new Set(selected.flatMap((category) => DISCOVERY_TYPES[category]))];
+}
+
+async function searchNearby(center: LatLng, includedTypes: readonly string[]): Promise<DiscoveredPlace[]> {
+  const response = await fetch(`${BASE_URL}/places:searchNearby`, {
+    method: 'POST',
+    headers: buildHeaders(NEARBY_FIELD_MASK),
+    body: JSON.stringify({
+      includedTypes,
+      maxResultCount: 20,
+      rankPreference: 'POPULARITY',
+      languageCode: 'fr',
+      regionCode: 'fr',
+      locationRestriction: { circle: { center, radius: SEARCH_RADIUS_METERS } },
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`Places nearby search failed: ${response.status}`);
+  }
+  const json = (await response.json()) as NearbyResponse;
+  return (json.places ?? []).flatMap((place) => {
+    if (!place.location || place.rating === undefined || place.userRatingCount === undefined) {
+      return [];
+    }
+    return [
+      {
+        googlePlaceId: place.id,
+        name: place.displayName?.text ?? '',
+        address: place.formattedAddress ?? '',
+        lat: place.location.latitude,
+        lng: place.location.longitude,
+        rating: place.rating,
+        userRatingCount: place.userRatingCount,
+        googleMapsUri: place.googleMapsUri ?? null,
+        primaryType: place.primaryType ?? null,
+        types: place.types ?? [],
+      },
+    ];
+  });
+}
+
+export async function discoverPlace(
+  categories: readonly DiscoveryCategory[],
+  excludedIds: ReadonlySet<string>,
+): Promise<DiscoveredPlace | null> {
+  const includedTypes = typesFor(categories);
+  for (const center of shuffled(ARRONDISSEMENT_CENTERS).slice(0, MAX_ATTEMPTS)) {
+    const candidates = (await searchNearby(center, includedTypes)).filter(
+      (place) =>
+        place.rating >= MIN_RATING &&
+        place.userRatingCount >= MIN_RATING_COUNT &&
+        !excludedIds.has(place.googlePlaceId),
+    );
+    if (candidates.length > 0) {
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+  }
+  return null;
+}
+
+export function discoveredCategory(place: DiscoveredPlace): CategoryKey {
+  const candidates = place.primaryType ? [place.primaryType, ...place.types] : place.types;
+  for (const type of candidates) {
+    const match = DISCOVERY_CATEGORY_KEYS.find((key) => DISCOVERY_TYPES[key].includes(type));
+    if (match) {
+      return match;
+    }
+  }
+  return suggestCategory(place.primaryType, place.types);
+}
+```
+
+- [ ] **Step 3: Create `src/features/places/pickerStyles.ts`**
+
+```ts
+import { StyleSheet } from 'react-native';
+
+import { colors, radius, spacing } from '@/theme';
+
+export const pickerStyles = StyleSheet.create({
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  hint: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+  },
+  loader: {
+    marginTop: spacing.xl * 2,
+  },
+  empty: {
+    marginTop: spacing.xl * 2,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  card: {
+    marginTop: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    gap: spacing.sm,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cardCategory: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cardName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  cardAddress: {
+    fontSize: 15,
+    color: colors.textMuted,
+  },
+  cardMeta: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  button: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.sm,
+  },
+  drawButton: {
+    marginTop: spacing.xl,
+  },
+  secondaryButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  buttonText: {
+    color: colors.surface,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  secondaryButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  disabled: {
+    opacity: 0.4,
+  },
+  pressed: {
+    opacity: 0.85,
+  },
+});
+```
+
+- [ ] **Step 4: Create `src/features/places/IdeasPanel.tsx`** (Task 3 picker moved out of the route, same behavior)
+
+```tsx
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+
+import { ToggleChip } from '@/components/ToggleChip';
+import { CATEGORIES, CATEGORY_BY_KEY } from '@/features/places/categories';
+import { pickerStyles } from '@/features/places/pickerStyles';
+import { usePlaces } from '@/features/places/PlacesProvider';
+import { pickRandom, randomCandidates } from '@/features/places/random';
+import type { CategoryKey } from '@/features/places/types';
+import { isSharedWish } from '@/features/places/wishes';
+import { useUsers } from '@/features/users/UsersProvider';
+import { colors, radius, spacing } from '@/theme';
+
+export function IdeasPanel() {
+  const { places, loading } = usePlaces();
+  const { usersById } = useUsers();
+  const [categories, setCategories] = useState<CategoryKey[]>([]);
+  const [sharedOnly, setSharedOnly] = useState(false);
+  const [pickedId, setPickedId] = useState<string | null>(null);
+
+  const candidates = useMemo(
+    () => randomCandidates(places, { categories, sharedOnly }),
+    [places, categories, sharedOnly],
+  );
+  const picked = candidates.find((place) => place.id === pickedId) ?? null;
+
+  function draw() {
+    setPickedId(pickRandom(candidates, pickedId)?.id ?? null);
+  }
+
+  function toggleCategory(key: CategoryKey) {
+    setCategories((current) => (current.includes(key) ? current.filter((k) => k !== key) : [...current, key]));
+  }
+
+  function renderResult() {
+    if (loading) {
+      return <ActivityIndicator style={pickerStyles.loader} color={colors.textMuted} />;
+    }
+    if (candidates.length === 0) {
+      return (
+        <View style={pickerStyles.empty}>
+          <Text style={pickerStyles.emptyTitle}>Aucun lieu ne correspond</Text>
+          <Text style={pickerStyles.emptyText}>Élargis les filtres ou ajoute de nouvelles idées.</Text>
+        </View>
+      );
+    }
+    if (!picked) {
+      return (
+        <Pressable
+          style={({ pressed }) => [pickerStyles.button, pickerStyles.drawButton, pressed && pickerStyles.pressed]}
+          onPress={draw}
+        >
+          <Ionicons name="dice-outline" size={22} color={colors.surface} />
+          <Text style={pickerStyles.buttonText}>Tirer au sort</Text>
+        </Pressable>
+      );
+    }
+
+    const category = CATEGORY_BY_KEY[picked.category];
+    const author = usersById[picked.createdBy]?.displayName;
+    const selectedId = picked.id;
+
+    return (
+      <View style={pickerStyles.card}>
+        <View style={pickerStyles.cardHeader}>
+          <Ionicons name={category.icon} size={18} color={colors.textMuted} />
+          <Text style={pickerStyles.cardCategory}>{category.label}</Text>
+          {isSharedWish(picked) ? <Ionicons name="heart" size={16} color={colors.heart} /> : null}
+        </View>
+        <Text style={pickerStyles.cardName}>{picked.name}</Text>
+        <Text style={pickerStyles.cardAddress}>{picked.address}</Text>
+        {author ? <Text style={pickerStyles.cardMeta}>Ajouté par {author}</Text> : null}
+        <View style={pickerStyles.actions}>
+          <Pressable
+            style={({ pressed }) => [
+              pickerStyles.button,
+              pickerStyles.secondaryButton,
+              candidates.length < 2 && pickerStyles.disabled,
+              pressed && pickerStyles.pressed,
+            ]}
+            onPress={draw}
+            disabled={candidates.length < 2}
+          >
+            <Text style={pickerStyles.secondaryButtonText}>Un autre</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [pickerStyles.button, pressed && pickerStyles.pressed]}
+            onPress={() => router.push({ pathname: '/place/[id]', params: { id: selectedId } })}
+          >
+            <Text style={pickerStyles.buttonText}>Voir le lieu</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <Text style={pickerStyles.label}>Catégories</Text>
+      <View style={pickerStyles.chips}>
+        {CATEGORIES.map((category) => (
+          <ToggleChip
+            key={category.key}
+            label={category.label}
+            icon={category.icon}
+            selected={categories.includes(category.key)}
+            onPress={() => toggleCategory(category.key)}
+          />
+        ))}
+      </View>
+      <Text style={pickerStyles.hint}>Aucune sélection = toutes les catégories</Text>
+
+      <View style={styles.switchRow}>
+        <Text style={styles.switchLabel}>Seulement nos envies communes</Text>
+        <Switch
+          value={sharedOnly}
+          onValueChange={setSharedOnly}
+          trackColor={{ false: colors.border, true: colors.heart }}
+        />
+      </View>
+
+      {renderResult()}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  switchLabel: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+  },
+});
+```
+
+- [ ] **Step 5: Create `src/features/search/DiscoveryPanel.tsx`**
+
+```tsx
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { ToggleChip } from '@/components/ToggleChip';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { createPlace } from '@/features/places/api';
+import { CATEGORY_BY_KEY } from '@/features/places/categories';
+import { pickerStyles } from '@/features/places/pickerStyles';
+import { usePlaces } from '@/features/places/PlacesProvider';
+import type { PlaceInput } from '@/features/places/types';
+import { notifyPartner } from '@/features/push/notifyPartner';
+import {
+  DISCOVERY_CATEGORY_KEYS,
+  type DiscoveredPlace,
+  type DiscoveryCategory,
+  discoveredCategory,
+  discoverPlace,
+} from '@/features/search/discovery';
+import { useUsers } from '@/features/users/UsersProvider';
+import { colors, spacing } from '@/theme';
+
+type AddState = 'idle' | 'adding' | 'added';
+
+const ADD_LABELS: Record<AddState, string> = {
+  idle: 'Ajouter à nos idées',
+  adding: 'Ajout…',
+  added: 'Ajouté',
+};
+
+function formatRating(place: DiscoveredPlace): string {
+  const rating = place.rating.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `★ ${rating} · ${place.userRatingCount.toLocaleString('fr-FR')} avis`;
+}
+
+function openInGoogleMaps(uri: string) {
+  Linking.openURL(uri).catch(() => Alert.alert('Oups', 'Impossible d’ouvrir Google Maps.'));
+}
+
+export function DiscoveryPanel() {
+  const { user } = useAuth();
+  const { places } = usePlaces();
+  const { users } = useUsers();
+  const [categories, setCategories] = useState<DiscoveryCategory[]>([]);
+  const [result, setResult] = useState<DiscoveredPlace | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [addState, setAddState] = useState<AddState>('idle');
+  const proposedIds = useRef(new Set<string>());
+
+  const knownIds = useMemo(
+    () => new Set(places.flatMap((place) => (place.googlePlaceId ? [place.googlePlaceId] : []))),
+    [places],
+  );
+
+  function toggleCategory(key: DiscoveryCategory) {
+    setCategories((current) => (current.includes(key) ? current.filter((k) => k !== key) : [...current, key]));
+  }
+
+  async function discover() {
+    setSearching(true);
+    setNotFound(false);
+    try {
+      const found = await discoverPlace(categories, new Set([...knownIds, ...proposedIds.current]));
+      if (found) {
+        proposedIds.current.add(found.googlePlaceId);
+        setAddState('idle');
+      }
+      setResult(found);
+      setNotFound(found === null);
+    } catch {
+      Alert.alert('Oups', 'Recherche indisponible, réessaie.');
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function addToIdeas(place: DiscoveredPlace) {
+    if (!user) return;
+    setAddState('adding');
+    const input: PlaceInput = {
+      name: place.name,
+      category: discoveredCategory(place),
+      address: place.address,
+      lat: place.lat,
+      lng: place.lng,
+      googlePlaceId: place.googlePlaceId,
+      status: 'todo',
+      rating: null,
+      comment: null,
+    };
+    try {
+      const id = await createPlace(input);
+      void notifyPartner({ id, name: input.name, category: input.category }, users, user.uid);
+      setAddState('added');
+    } catch {
+      setAddState('idle');
+      Alert.alert('Oups', 'Ajout impossible, réessaie.');
+    }
+  }
+
+  function renderResult() {
+    if (searching && !result) {
+      return <ActivityIndicator style={pickerStyles.loader} color={colors.textMuted} />;
+    }
+    if (!result) {
+      return (
+        <>
+          {notFound ? (
+            <View style={pickerStyles.empty}>
+              <Text style={pickerStyles.emptyTitle}>Rien trouvé</Text>
+              <Text style={pickerStyles.emptyText}>Réessaie ou change de catégorie.</Text>
+            </View>
+          ) : null}
+          <Pressable
+            style={({ pressed }) => [pickerStyles.button, pickerStyles.drawButton, pressed && pickerStyles.pressed]}
+            onPress={discover}
+          >
+            <Ionicons name="sparkles-outline" size={22} color={colors.surface} />
+            <Text style={pickerStyles.buttonText}>Découvrir</Text>
+          </Pressable>
+        </>
+      );
+    }
+
+    const category = CATEGORY_BY_KEY[discoveredCategory(result)];
+    const mapsUri = result.googleMapsUri;
+    const current = result;
+
+    return (
+      <View style={pickerStyles.card}>
+        <View style={pickerStyles.cardHeader}>
+          <Ionicons name={category.icon} size={18} color={colors.textMuted} />
+          <Text style={pickerStyles.cardCategory}>{category.label}</Text>
+        </View>
+        <Text style={pickerStyles.cardName}>{result.name}</Text>
+        <Text style={pickerStyles.cardAddress}>{result.address}</Text>
+        <Text style={pickerStyles.cardMeta}>{formatRating(result)}</Text>
+        {mapsUri ? (
+          <Pressable onPress={() => openInGoogleMaps(mapsUri)} hitSlop={8}>
+            <Text style={styles.link}>Voir sur Google Maps</Text>
+          </Pressable>
+        ) : null}
+        <View style={pickerStyles.actions}>
+          <Pressable
+            style={({ pressed }) => [
+              pickerStyles.button,
+              pickerStyles.secondaryButton,
+              searching && pickerStyles.disabled,
+              pressed && pickerStyles.pressed,
+            ]}
+            onPress={discover}
+            disabled={searching}
+          >
+            {searching ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={pickerStyles.secondaryButtonText}>Un autre</Text>
+            )}
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              pickerStyles.button,
+              addState !== 'idle' && pickerStyles.disabled,
+              pressed && pickerStyles.pressed,
+            ]}
+            onPress={() => addToIdeas(current)}
+            disabled={addState !== 'idle'}
+          >
+            <Text style={pickerStyles.buttonText}>{ADD_LABELS[addState]}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <Text style={pickerStyles.label}>Catégories</Text>
+      <View style={pickerStyles.chips}>
+        {DISCOVERY_CATEGORY_KEYS.map((key) => (
+          <ToggleChip
+            key={key}
+            label={CATEGORY_BY_KEY[key].label}
+            icon={CATEGORY_BY_KEY[key].icon}
+            selected={categories.includes(key)}
+            onPress={() => toggleCategory(key)}
+          />
+        ))}
+      </View>
+      <Text style={pickerStyles.hint}>Aucune sélection = toutes les catégories · lieux bien notés dans Paris</Text>
+
+      {renderResult()}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  link: {
+    color: colors.primary,
+    fontWeight: '600',
+    marginTop: spacing.xs,
+  },
+});
+```
+
+- [ ] **Step 6: Replace `src/app/place/random.tsx`**
+
+```tsx
+import { useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+
+import { SegmentedControl } from '@/components/SegmentedControl';
+import { IdeasPanel } from '@/features/places/IdeasPanel';
+import { DiscoveryPanel } from '@/features/search/DiscoveryPanel';
+import { colors, spacing } from '@/theme';
+
+type Mode = 'ideas' | 'discovery';
+
+const MODE_OPTIONS: readonly { value: Mode; label: string }[] = [
+  { value: 'ideas', label: 'Nos idées' },
+  { value: 'discovery', label: 'Découverte' },
+];
+
+export default function RandomPlaceScreen() {
+  const [mode, setMode] = useState<Mode>('ideas');
+
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <View style={styles.mode}>
+        <SegmentedControl options={MODE_OPTIONS} value={mode} onChange={setMode} />
+      </View>
+      {mode === 'ideas' ? <IdeasPanel /> : <DiscoveryPanel />}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl * 2,
+  },
+  mode: {
+    marginBottom: spacing.xl,
+  },
+});
+```
+
+- [ ] **Step 7: Verify**
+
+```bash
+npx tsc --noEmit
+npx expo export --platform ios --output-dir .expo/export-check
+```
+
+Expected: both succeed. If `sparkles-outline` is not in the installed Ionicons glyph map, use `search` and report it. Do not call the Google API.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/features/search/googlePlaces.ts src/features/search/discovery.ts src/features/places/pickerStyles.ts src/features/places/IdeasPanel.tsx src/features/search/DiscoveryPanel.tsx src/app/place/random.tsx
+git status
+git commit -m "$(cat <<'EOF'
+feat: discovery mode suggesting well-rated Paris places
 
 Co-Authored-By: <implementer model name> <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015rchfifkpwEqh7Q8UBBgMT
