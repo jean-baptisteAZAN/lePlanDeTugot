@@ -5,7 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { Fab } from '@/components/Fab';
 import { usePlaces } from '@/features/places/PlacesProvider';
 import type { Place } from '@/features/places/types';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, spacing, stroke } from '@/theme';
 
 const PARIS_REGION = {
   latitude: 48.8566,
@@ -41,11 +41,11 @@ export default function MapScreen() {
         ))}
       </MapView>
       <View style={styles.legend}>
-        <View style={styles.legendItem}>
+        <View style={[styles.legendSticker, styles.tiltLeft]}>
           <View style={[styles.dot, { backgroundColor: colors.todo }]} />
           <Text style={styles.legendText}>À faire</Text>
         </View>
-        <View style={styles.legendItem}>
+        <View style={[styles.legendSticker, styles.tiltRight]}>
           <View style={[styles.dot, { backgroundColor: colors.done }]} />
           <Text style={styles.legendText}>Fait</Text>
         </View>
@@ -64,28 +64,35 @@ const styles = StyleSheet.create({
     top: spacing.md,
     left: spacing.md,
     flexDirection: 'row',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    shadowColor: '#000000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    gap: spacing.sm,
   },
-  legendItem: {
+  legendSticker: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+    backgroundColor: colors.surface,
+    borderWidth: stroke,
+    borderColor: colors.ink,
+    borderRadius: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  tiltLeft: {
+    transform: [{ rotate: '-3deg' }],
+  },
+  tiltRight: {
+    transform: [{ rotate: '2deg' }],
   },
   dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
+    borderWidth: 1,
+    borderColor: colors.ink,
   },
   legendText: {
+    fontFamily: fonts.bold,
     fontSize: 13,
-    color: colors.text,
+    color: colors.ink,
   },
 });

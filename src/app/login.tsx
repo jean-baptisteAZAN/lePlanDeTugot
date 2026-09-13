@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet, Text, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/Button';
+import { StampCollage } from '@/components/StampCollage';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, stroke } from '@/theme';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -29,12 +31,13 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior="padding" style={styles.container}>
+        <StampCollage />
         <Text style={styles.title}>Le Plan de Turgot</Text>
         <Text style={styles.subtitle}>Nos lieux à Paris</Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.inkFaint}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -46,7 +49,7 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Mot de passe"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.inkFaint}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -56,17 +59,13 @@ export default function LoginScreen() {
           onSubmitEditing={handleSubmit}
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Pressable
-          style={[styles.button, !canSubmit && styles.buttonDisabled]}
-          disabled={!canSubmit}
+        <Button
+          label="Se connecter"
           onPress={handleSubmit}
-        >
-          {submitting ? (
-            <ActivityIndicator color={colors.surface} />
-          ) : (
-            <Text style={styles.buttonText}>Se connecter</Text>
-          )}
-        </Pressable>
+          loading={submitting}
+          disabled={!canSubmit}
+          style={styles.submit}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -75,7 +74,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
   },
   container: {
     flex: 1,
@@ -84,44 +83,38 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.text,
+    fontFamily: fonts.display,
+    fontSize: 34,
+    color: colors.ink,
     textAlign: 'center',
+    textShadowColor: colors.lemon,
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
   },
   subtitle: {
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: colors.textMuted,
+    color: colors.inkMuted,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   input: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: stroke,
+    borderColor: colors.ink,
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: colors.text,
+    color: colors.ink,
   },
   error: {
+    fontFamily: fonts.bold,
     color: colors.danger,
     textAlign: 'center',
   },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
+  submit: {
     marginTop: spacing.sm,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.surface,
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

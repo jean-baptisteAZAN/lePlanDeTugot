@@ -6,14 +6,14 @@ import { SectionList, StyleSheet, Text, View } from 'react-native';
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { Fab } from '@/components/Fab';
 import { SegmentedControl } from '@/components/SegmentedControl';
-import { ToggleChip } from '@/components/ToggleChip';
+import { Sticker } from '@/components/Sticker';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { groupPlacesByCategory, type PlaceSection, type StatusFilter } from '@/features/places/grouping';
 import { PlaceRow } from '@/features/places/PlaceRow';
 import { usePlaces } from '@/features/places/PlacesProvider';
 import type { Place } from '@/features/places/types';
 import { useUsers } from '@/features/users/UsersProvider';
-import { colors, spacing } from '@/theme';
+import { colors, fonts, spacing } from '@/theme';
 
 const FILTER_OPTIONS: readonly { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'Tous' },
@@ -67,7 +67,7 @@ export default function PlacesListScreen() {
         contentContainerStyle={styles.listContent}
         renderSectionHeader={({ section }) => (
           <View style={styles.sectionHeader}>
-            <Ionicons name={section.category.icon} size={16} color={colors.textMuted} />
+            <Ionicons name={section.category.icon} size={18} color={colors.cobalt} />
             <Text style={styles.sectionTitle}>{section.category.label}</Text>
             <Text style={styles.sectionCount}>{section.data.length}</Text>
           </View>
@@ -90,12 +90,12 @@ export default function PlacesListScreen() {
       <View style={styles.filter}>
         <SegmentedControl options={FILTER_OPTIONS} value={filter} onChange={setFilter} />
         <View style={styles.chipRow}>
-          <ToggleChip
-            label="Envie à deux"
-            icon="heart"
+          <Sticker
+            label="Les deux partants"
+            tone="lemon"
+            tilt={-2}
             selected={sharedOnly}
             onPress={() => setSharedOnly((value) => !value)}
-            selectedColor={colors.heart}
           />
         </View>
       </View>
@@ -108,10 +108,10 @@ export default function PlacesListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
   },
   filter: {
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 96,
+    paddingBottom: 110,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -131,14 +131,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: fonts.display,
+    fontSize: 18,
+    color: colors.cobalt,
   },
   sectionCount: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.inkMuted,
   },
 });
