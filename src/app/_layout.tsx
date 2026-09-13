@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
 import { PlacesProvider } from '@/features/places/PlacesProvider';
+import { usePushSetup } from '@/features/push/usePushSetup';
 import { UsersProvider } from '@/features/users/UsersProvider';
 import { colors } from '@/theme';
 
@@ -21,6 +22,7 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
+  usePushSetup();
   const { user, initializing } = useAuth();
 
   if (initializing) {

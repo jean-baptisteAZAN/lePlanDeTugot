@@ -1,6 +1,7 @@
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, type User } from 'firebase/auth';
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 
+import { setPushToken } from '@/features/users/api';
 import { auth } from '@/lib/firebase';
 
 type AuthState = {
@@ -17,6 +18,10 @@ async function signIn(email: string, password: string): Promise<void> {
 }
 
 async function signOut(): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (uid) {
+    await setPushToken(uid, null).catch((error: unknown) => console.warn('Clearing push token failed', error));
+  }
   await firebaseSignOut(auth);
 }
 

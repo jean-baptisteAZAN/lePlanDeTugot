@@ -1,14 +1,19 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 
+import { useAuth } from '@/features/auth/AuthProvider';
 import { createPlace } from '@/features/places/api';
 import { suggestCategory } from '@/features/places/categories';
 import { PlaceForm } from '@/features/places/PlaceForm';
 import type { PlaceInput } from '@/features/places/types';
+import { notifyPartner } from '@/features/push/notifyPartner';
 import type { PlaceDetails } from '@/features/search/googlePlaces';
 import { PlaceSearch } from '@/features/search/PlaceSearch';
+import { useUsers } from '@/features/users/UsersProvider';
 
 export default function NewPlaceScreen() {
+  const { user } = useAuth();
+  const { users } = useUsers();
   const [values, setValues] = useState<PlaceInput | null>(null);
   const [searching, setSearching] = useState(true);
 
@@ -28,7 +33,10 @@ export default function NewPlaceScreen() {
   }
 
   async function handleSubmit(input: PlaceInput) {
-    await createPlace(input);
+    const id = await createPlace(input);
+    if (user) {
+      void notifyPartner({ id, name: input.name, category: input.category }, users, user.uid);
+    }
     router.back();
   }
 
