@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isMember() {
+      return request.auth != null
+        && request.auth.uid in ['UID_USER_1', 'UID_USER_2'];
+    }
+
+    function isValidPlace(data) {
+      return data.keys().hasOnly([
+          'name', 'category', 'address', 'lat', 'lng', 'googlePlaceId',
+          'status', 'rating', 'comment', 'createdBy', 'createdAt', 'updatedAt'
+        ])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.category in ['resto', 'bar', 'cafe', 'activite', 'culture', 'autre']
+        && data.address is string
+        && data.lat is number && data.lng is number
+        && (data.googlePlaceId == null || data.googlePlaceId is string)
+        && data.status in ['todo', 'done']
+        && ((data.status == 'todo' && data.rating == null)
+          || (data.status == 'done' && data.rating is int && data.rating >= 1 && data.rating <= 5))
+        && (data.comment == null || (data.comment is string && data.comment.size() <= 2000))
+        && data.createdBy is string
+        && data.updatedAt == request.time;
+    }
+
+    match /places/{placeId} {
+      allow read: if isMember();
+      allow create: if isMember()
+        && isValidPlace(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update: if isMember()
+        && isValidPlace(request.resource.data)
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isMember();
+    }
+
+    match /users/{uid} {
+      allow read: if isMember();
+      allow update: if isMember()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['displayName', 'expoPushToken'])
+        && request.resource.data.displayName is string
+        && (request.resource.data.expoPushToken == null || request.resource.data.expoPushToken is string);
+    }
+  }
+}

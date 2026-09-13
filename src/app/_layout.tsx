@@ -3,12 +3,18 @@ import { StatusBar } from 'expo-status-bar';
 
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
+import { PlacesProvider } from '@/features/places/PlacesProvider';
+import { UsersProvider } from '@/features/users/UsersProvider';
 import { colors } from '@/theme';
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootNavigator />
+      <UsersProvider>
+        <PlacesProvider>
+          <RootNavigator />
+        </PlacesProvider>
+      </UsersProvider>
       <StatusBar style="dark" />
     </AuthProvider>
   );
