@@ -38,7 +38,8 @@ export function PlaceForm({ values, onChange, onChangeLocation, onSubmit, submit
     setSubmitting(true);
     try {
       await onSubmit(input);
-    } catch {
+    } catch (error) {
+      console.warn('Place save failed', error);
       Alert.alert('Oups', 'Enregistrement impossible, réessaie.');
     } finally {
       setSubmitting(false);
