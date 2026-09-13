@@ -47,6 +47,7 @@ export function DiscoveryPanel() {
   const [notFound, setNotFound] = useState(false);
   const [addState, setAddState] = useState<AddState>('idle');
   const proposedIds = useRef(new Set<string>());
+  const busy = searching || addState === 'adding';
 
   const knownIds = useMemo(
     () => new Set(places.flatMap((place) => (place.googlePlaceId ? [place.googlePlaceId] : []))),
@@ -58,6 +59,7 @@ export function DiscoveryPanel() {
   }
 
   async function discover() {
+    if (busy) return;
     setSearching(true);
     setNotFound(false);
     try {
@@ -76,7 +78,7 @@ export function DiscoveryPanel() {
   }
 
   async function addToIdeas(place: DiscoveredPlace) {
-    if (!user) return;
+    if (!user || busy) return;
     setAddState('adding');
     const input: PlaceInput = {
       name: place.name,
@@ -146,11 +148,11 @@ export function DiscoveryPanel() {
             style={({ pressed }) => [
               pickerStyles.button,
               pickerStyles.secondaryButton,
-              searching && pickerStyles.disabled,
+              busy && pickerStyles.disabled,
               pressed && pickerStyles.pressed,
             ]}
             onPress={discover}
-            disabled={searching}
+            disabled={busy}
           >
             {searching ? (
               <ActivityIndicator color={colors.primary} />
@@ -161,11 +163,11 @@ export function DiscoveryPanel() {
           <Pressable
             style={({ pressed }) => [
               pickerStyles.button,
-              addState !== 'idle' && pickerStyles.disabled,
+              (addState !== 'idle' || searching) && pickerStyles.disabled,
               pressed && pickerStyles.pressed,
             ]}
             onPress={() => addToIdeas(current)}
-            disabled={addState !== 'idle'}
+            disabled={addState !== 'idle' || searching}
           >
             <Text style={pickerStyles.buttonText}>{ADD_LABELS[addState]}</Text>
           </Pressable>
