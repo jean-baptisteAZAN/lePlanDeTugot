@@ -35,7 +35,6 @@ export default function LoginScreen() {
       <KeyboardAvoidingView behavior="padding" style={styles.container}>
         <StampCollage />
         <Text style={styles.title}>Le Plan de Turgot</Text>
-        <Text style={styles.subtitle}>Nos lieux à Paris</Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -95,13 +94,6 @@ const styles = StyleSheet.create({
     textShadowColor: colors.lemon,
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 0,
-  },
-  subtitle: {
-    fontFamily: fonts.medium,
-    fontSize: 16,
-    color: colors.inkMuted,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
   },
   input: {
     backgroundColor: colors.surface,
