@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import { Alert, Pressable } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -20,6 +20,16 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         headerStyle: { backgroundColor: colors.background },
+        headerLeft: () => (
+          <Pressable
+            onPress={() => router.push('/place/random')}
+            hitSlop={8}
+            style={{ marginLeft: spacing.lg }}
+            accessibilityLabel="On fait quoi ce soir ?"
+          >
+            <Ionicons name="dice-outline" size={22} color={colors.text} />
+          </Pressable>
+        ),
         headerRight: () => (
           <Pressable
             onPress={confirmSignOut}

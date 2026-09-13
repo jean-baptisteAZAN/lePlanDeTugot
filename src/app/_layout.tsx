@@ -44,6 +44,11 @@ function RootNavigator() {
           options={{ presentation: 'modal', title: 'Nouveau lieu' }}
         />
         <Stack.Screen name="place/[id]" options={{ presentation: 'modal', title: 'Lieu' }} />
+        <Stack.Screen
+          name="place/random"
+          dangerouslySingular
+          options={{ presentation: 'modal', title: 'On fait quoi ce soir ?' }}
+        />
       </Stack.Protected>
     </Stack>
   );
