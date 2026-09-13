@@ -11,6 +11,7 @@ export const colors = {
   doneSoft: '#DCFCE7',
   danger: '#B91C1C',
   star: '#F59E0B',
+  heart: '#E11D48',
 } as const;
 
 export const spacing = {

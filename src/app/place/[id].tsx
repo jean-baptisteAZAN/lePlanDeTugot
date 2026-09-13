@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CenteredMessage } from '@/components/CenteredMessage';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { deletePlace, placeExists, updatePlace } from '@/features/places/api';
 import { PlaceForm } from '@/features/places/PlaceForm';
 import { usePlace, usePlaces } from '@/features/places/PlacesProvider';
 import type { Place, PlaceInput } from '@/features/places/types';
+import { WishHeart } from '@/features/places/WishHeart';
+import { isSharedWish } from '@/features/places/wishes';
 import type { PlaceDetails } from '@/features/search/googlePlaces';
 import { PlaceSearch } from '@/features/search/PlaceSearch';
 import { useUsers } from '@/features/users/UsersProvider';
@@ -30,6 +33,7 @@ function toInput(place: Place, markDone: boolean): PlaceInput {
 }
 
 export default function PlaceDetailScreen() {
+  const { user } = useAuth();
   const { id, done } = useLocalSearchParams<{ id: string; done?: string }>();
   const place = usePlace(id);
   const { loading } = usePlaces();
@@ -115,6 +119,14 @@ export default function PlaceDetailScreen() {
 
   const author = usersById[place.createdBy]?.displayName;
   const createdOn = place.createdAt.toDate().toLocaleDateString('fr-FR');
+  const wishLabel =
+    place.status !== 'todo' || !user
+      ? null
+      : isSharedWish(place)
+        ? 'Envie partagée'
+        : place.createdBy === user.uid
+          ? null
+          : 'Moi aussi';
 
   return (
     <>
@@ -127,6 +139,12 @@ export default function PlaceDetailScreen() {
         submitLabel="Enregistrer"
         footer={
           <View style={styles.footer}>
+            {wishLabel && user ? (
+              <View style={styles.wishRow}>
+                <WishHeart place={place} myUid={user.uid} size={24} />
+                <Text style={styles.wishText}>{wishLabel}</Text>
+              </View>
+            ) : null}
             <Text style={styles.meta}>{author ? `Ajouté par ${author} le ${createdOn}` : `Ajouté le ${createdOn}`}</Text>
             <Pressable style={styles.deleteButton} onPress={confirmDelete}>
               <Ionicons name="trash-outline" size={18} color={colors.danger} />
@@ -144,6 +162,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     alignItems: 'center',
     gap: spacing.lg,
+  },
+  wishRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  wishText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
   },
   meta: {
     color: colors.textMuted,

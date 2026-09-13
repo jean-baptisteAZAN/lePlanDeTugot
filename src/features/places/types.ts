@@ -17,6 +17,7 @@ export type Place = {
   status: PlaceStatus;
   rating: Rating | null;
   comment: string | null;
+  likedBy: string[];
   createdBy: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

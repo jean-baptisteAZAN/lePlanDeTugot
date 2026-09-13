@@ -6,6 +6,8 @@ import { SectionList, StyleSheet, Text, View } from 'react-native';
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { Fab } from '@/components/Fab';
 import { SegmentedControl } from '@/components/SegmentedControl';
+import { ToggleChip } from '@/components/ToggleChip';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { groupPlacesByCategory, type PlaceSection, type StatusFilter } from '@/features/places/grouping';
 import { PlaceRow } from '@/features/places/PlaceRow';
 import { usePlaces } from '@/features/places/PlacesProvider';
@@ -24,10 +26,21 @@ function openPlace(id: string, markDone: boolean) {
 }
 
 export default function PlacesListScreen() {
+  const { user } = useAuth();
   const { places, loading, error } = usePlaces();
   const { usersById } = useUsers();
   const [filter, setFilter] = useState<StatusFilter>('all');
-  const sections = useMemo(() => groupPlacesByCategory(places, filter), [places, filter]);
+  const [sharedOnly, setSharedOnly] = useState(false);
+  const sections = useMemo(
+    () => groupPlacesByCategory(places, filter, sharedOnly),
+    [places, filter, sharedOnly],
+  );
+
+  if (!user) {
+    return null;
+  }
+
+  const myUid = user.uid;
 
   function renderContent() {
     if (loading) {
@@ -37,6 +50,9 @@ export default function PlacesListScreen() {
       return <CenteredMessage text="Impossible de charger les lieux" />;
     }
     if (sections.length === 0) {
+      if (sharedOnly) {
+        return <CenteredMessage text="Pas encore d’envie commune ici" />;
+      }
       return (
         <CenteredMessage
           text={filter === 'all' ? 'Aucun lieu pour l’instant. Ajoute le premier !' : 'Aucun lieu ici'}
@@ -59,6 +75,7 @@ export default function PlacesListScreen() {
         renderItem={({ item }) => (
           <PlaceRow
             place={item}
+            myUid={myUid}
             addedBy={usersById[item.createdBy]?.displayName}
             onPress={() => openPlace(item.id, false)}
             onPressStatus={() => openPlace(item.id, item.status === 'todo')}
@@ -72,6 +89,15 @@ export default function PlacesListScreen() {
     <View style={styles.container}>
       <View style={styles.filter}>
         <SegmentedControl options={FILTER_OPTIONS} value={filter} onChange={setFilter} />
+        <View style={styles.chipRow}>
+          <ToggleChip
+            label="Envie à deux"
+            icon="heart"
+            selected={sharedOnly}
+            onPress={() => setSharedOnly((value) => !value)}
+            selectedColor={colors.heart}
+          />
+        </View>
       </View>
       {renderContent()}
       <Fab />
@@ -85,9 +111,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   filter: {
+    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
+  },
+  chipRow: {
+    flexDirection: 'row',
   },
   listContent: {
     paddingHorizontal: spacing.lg,

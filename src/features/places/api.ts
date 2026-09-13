@@ -1,5 +1,7 @@
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -25,6 +27,7 @@ export async function createPlace(input: PlaceInput): Promise<string> {
   const ref = await addDoc(placesCollection, {
     ...input,
     createdBy: uid,
+    likedBy: [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -52,12 +55,23 @@ export function subscribePlaces(
     query(placesCollection, orderBy('createdAt', 'desc')),
     (snapshot) => {
       onData(
-        snapshot.docs.map((document) => ({
-          id: document.id,
-          ...(document.data({ serverTimestamps: 'estimate' }) as Omit<Place, 'id'>),
-        })),
+        snapshot.docs.map((document) => {
+          const data = document.data({ serverTimestamps: 'estimate' }) as Omit<Place, 'id'>;
+          return { ...data, id: document.id, likedBy: Array.isArray(data.likedBy) ? data.likedBy : [] };
+        }),
       );
     },
     onError,
   );
+}
+
+export async function setLiked(id: string, liked: boolean): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error('Not authenticated');
+  }
+  await updateDoc(doc(db, 'places', id), {
+    likedBy: liked ? arrayUnion(uid) : arrayRemove(uid),
+    updatedAt: serverTimestamp(),
+  });
 }

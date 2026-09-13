@@ -3,16 +3,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { RatingStars } from '@/components/RatingStars';
 import { StatusBadge } from '@/components/StatusBadge';
 import type { Place } from '@/features/places/types';
+import { WishHeart } from '@/features/places/WishHeart';
 import { colors, radius, spacing } from '@/theme';
 
 type Props = {
   place: Place;
+  myUid: string;
   addedBy: string | undefined;
   onPress: () => void;
   onPressStatus: () => void;
 };
 
-export function PlaceRow({ place, addedBy, onPress, onPressStatus }: Props) {
+export function PlaceRow({ place, myUid, addedBy, onPress, onPressStatus }: Props) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
       <View style={styles.main}>
@@ -23,6 +25,7 @@ export function PlaceRow({ place, addedBy, onPress, onPressStatus }: Props) {
           {addedBy ? `Ajouté par ${addedBy}` : place.address}
         </Text>
       </View>
+      <WishHeart place={place} myUid={myUid} />
       <View style={styles.side}>
         <StatusBadge status={place.status} onPress={onPressStatus} />
         {place.status === 'done' && place.rating !== null ? <RatingStars value={place.rating} size={12} /> : null}
