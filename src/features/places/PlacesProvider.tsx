@@ -10,26 +10,38 @@ type PlacesState = {
   error: Error | null;
 };
 
+type PlacesSnapshot = {
+  uid: string | null;
+  places: Place[];
+  error: Error | null;
+};
+
 const PlacesContext = createContext<PlacesState | null>(null);
 
 export function PlacesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
-  const [state, setState] = useState<PlacesState>({ places: [], loading: true, error: null });
+  const [snapshot, setSnapshot] = useState<PlacesSnapshot>({ uid: null, places: [], error: null });
 
   useEffect(() => {
-    if (!uid) {
-      setState({ places: [], loading: false, error: null });
-      return;
-    }
-    setState((previous) => ({ ...previous, loading: true, error: null }));
+    if (!uid) return;
     return subscribePlaces(
-      (places) => setState({ places, loading: false, error: null }),
-      (error) => setState((previous) => ({ ...previous, loading: false, error })),
+      (places) => setSnapshot({ uid, places, error: null }),
+      (error) =>
+        setSnapshot((previous) => ({ uid, places: previous.uid === uid ? previous.places : [], error })),
     );
   }, [uid]);
 
-  return <PlacesContext value={state}>{children}</PlacesContext>;
+  const value = useMemo<PlacesState>(() => {
+    const isCurrent = uid !== null && snapshot.uid === uid;
+    return {
+      places: isCurrent ? snapshot.places : [],
+      loading: uid !== null && !isCurrent,
+      error: isCurrent ? snapshot.error : null,
+    };
+  }, [uid, snapshot]);
+
+  return <PlacesContext value={value}>{children}</PlacesContext>;
 }
 
 export function usePlaces(): PlacesState {

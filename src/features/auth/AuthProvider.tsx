@@ -17,10 +17,16 @@ async function signIn(email: string, password: string): Promise<void> {
   await signInWithEmailAndPassword(auth, email.trim(), password);
 }
 
+const TOKEN_CLEAR_TIMEOUT_MS = 3000;
+
 async function signOut(): Promise<void> {
   const uid = auth.currentUser?.uid;
   if (uid) {
-    await setPushToken(uid, null).catch((error: unknown) => console.warn('Clearing push token failed', error));
+    const clearToken = setPushToken(uid, null).catch((error: unknown) =>
+      console.warn('Clearing push token failed', error),
+    );
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, TOKEN_CLEAR_TIMEOUT_MS));
+    await Promise.race([clearToken, timeout]);
   }
   await firebaseSignOut(auth);
 }

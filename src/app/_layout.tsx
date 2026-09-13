@@ -38,7 +38,11 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={loggedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="place/new" options={{ presentation: 'modal', title: 'Nouveau lieu' }} />
+        <Stack.Screen
+          name="place/new"
+          dangerouslySingular
+          options={{ presentation: 'modal', title: 'Nouveau lieu' }}
+        />
         <Stack.Screen name="place/[id]" options={{ presentation: 'modal', title: 'Lieu' }} />
       </Stack.Protected>
     </Stack>

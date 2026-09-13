@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -36,6 +37,11 @@ export async function updatePlace(id: string, input: PlaceInput): Promise<void> 
 
 export async function deletePlace(id: string): Promise<void> {
   await deleteDoc(doc(db, 'places', id));
+}
+
+export async function placeExists(id: string): Promise<boolean> {
+  const snapshot = await getDoc(doc(db, 'places', id));
+  return snapshot.exists();
 }
 
 export function subscribePlaces(

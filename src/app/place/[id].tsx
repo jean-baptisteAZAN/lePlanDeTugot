@@ -1,10 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CenteredMessage } from '@/components/CenteredMessage';
-import { deletePlace, updatePlace } from '@/features/places/api';
+import { deletePlace, placeExists, updatePlace } from '@/features/places/api';
 import { PlaceForm } from '@/features/places/PlaceForm';
 import { usePlace, usePlaces } from '@/features/places/PlacesProvider';
 import type { Place, PlaceInput } from '@/features/places/types';
@@ -12,6 +12,8 @@ import type { PlaceDetails } from '@/features/search/googlePlaces';
 import { PlaceSearch } from '@/features/search/PlaceSearch';
 import { useUsers } from '@/features/users/UsersProvider';
 import { colors, spacing } from '@/theme';
+
+type LookupState = 'checking' | 'missing' | 'error';
 
 function toInput(place: Place, markDone: boolean): PlaceInput {
   return {
@@ -35,13 +37,37 @@ export default function PlaceDetailScreen() {
   const [edited, setEdited] = useState<PlaceInput | null>(null);
   const [searching, setSearching] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [lookup, setLookup] = useState<LookupState>('checking');
+  const found = place !== undefined;
+
+  useEffect(() => {
+    setLookup('checking');
+    if (found || loading || deleting) return;
+    let cancelled = false;
+    placeExists(id)
+      .then((exists) => {
+        if (!cancelled && !exists) setLookup('missing');
+      })
+      .catch(() => {
+        if (!cancelled) setLookup('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [found, loading, deleting, id]);
 
   if (deleting) {
     return <CenteredMessage loading text="Suppression…" />;
   }
 
   if (!place) {
-    return <CenteredMessage loading={loading} text={loading ? 'Chargement…' : 'Ce lieu n’existe plus'} />;
+    if (lookup === 'missing') {
+      return <CenteredMessage text="Ce lieu n’existe plus" />;
+    }
+    if (lookup === 'error') {
+      return <CenteredMessage text="Impossible de charger ce lieu" />;
+    }
+    return <CenteredMessage loading text="Chargement…" />;
   }
 
   const placeId = place.id;
