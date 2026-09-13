@@ -29,7 +29,7 @@ export default function RandomPlaceScreen() {
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
   },
   content: {
     padding: spacing.lg,

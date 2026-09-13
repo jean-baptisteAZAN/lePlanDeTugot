@@ -13,15 +13,6 @@ export const colors = {
   danger: '#D92D20',
   todo: '#FF7A1A',
   done: '#2E4BFF',
-  background: '#F3F5EF',
-  text: INK,
-  textMuted: 'rgba(28, 27, 34, 0.62)',
-  border: 'rgba(28, 27, 34, 0.38)',
-  primary: '#2E4BFF',
-  todoSoft: '#FFFFFF',
-  doneSoft: '#FFFFFF',
-  star: '#FF7A1A',
-  heart: '#FF7A1A',
 } as const;
 
 export const fonts = {

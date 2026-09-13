@@ -1,20 +1,20 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '@/components/Button';
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { deletePlace, placeExists, updatePlace } from '@/features/places/api';
 import { PlaceForm } from '@/features/places/PlaceForm';
 import { usePlace, usePlaces } from '@/features/places/PlacesProvider';
+import { PlusOne } from '@/features/places/PlusOne';
 import type { Place, PlaceInput } from '@/features/places/types';
-import { WishHeart } from '@/features/places/WishHeart';
 import { isSharedWish } from '@/features/places/wishes';
 import type { PlaceDetails } from '@/features/search/googlePlaces';
 import { PlaceSearch } from '@/features/search/PlaceSearch';
 import { useUsers } from '@/features/users/UsersProvider';
-import { colors, spacing } from '@/theme';
+import { colors, fonts, spacing } from '@/theme';
 
 type LookupState = 'checking' | 'missing' | 'error';
 
@@ -123,7 +123,7 @@ export default function PlaceDetailScreen() {
     place.status !== 'todo' || values.status !== 'todo' || !user
       ? null
       : isSharedWish(place)
-        ? 'Envie partagée'
+        ? 'Partants tous les deux'
         : place.createdBy === user.uid
           ? null
           : 'Moi aussi';
@@ -141,15 +141,18 @@ export default function PlaceDetailScreen() {
           <View style={styles.footer}>
             {wishLabel && user ? (
               <View style={styles.wishRow}>
-                <WishHeart place={place} myUid={user.uid} size={24} />
+                <PlusOne place={place} myUid={user.uid} size="lg" />
                 <Text style={styles.wishText}>{wishLabel}</Text>
               </View>
             ) : null}
             <Text style={styles.meta}>{author ? `Ajouté par ${author} le ${createdOn}` : `Ajouté le ${createdOn}`}</Text>
-            <Pressable style={styles.deleteButton} onPress={confirmDelete}>
-              <Ionicons name="trash-outline" size={18} color={colors.danger} />
-              <Text style={styles.deleteText}>Supprimer</Text>
-            </Pressable>
+            <Button
+              label="Supprimer"
+              icon="trash-outline"
+              variant="danger"
+              onPress={confirmDelete}
+              style={styles.deleteButton}
+            />
           </View>
         }
       />
@@ -166,26 +169,19 @@ const styles = StyleSheet.create({
   wishRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   wishText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.display,
+    fontSize: 17,
+    color: colors.ink,
   },
   meta: {
-    color: colors.textMuted,
+    fontFamily: fonts.medium,
     fontSize: 13,
+    color: colors.inkMuted,
   },
   deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
-  },
-  deleteText: {
-    color: colors.danger,
-    fontSize: 16,
-    fontWeight: '600',
+    alignSelf: 'stretch',
   },
 });

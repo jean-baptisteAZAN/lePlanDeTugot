@@ -1,15 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 
-import { ToggleChip } from '@/components/ToggleChip';
+import { Button } from '@/components/Button';
+import { Sticker, stickerTilt } from '@/components/Sticker';
+import { TicketHeader } from '@/components/TicketHeader';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { createPlace } from '@/features/places/api';
 import { CATEGORY_BY_KEY } from '@/features/places/categories';
 import { pickerStyles } from '@/features/places/pickerStyles';
 import { usePlaces } from '@/features/places/PlacesProvider';
-import { normalizePlaceInput, validatePlaceInput } from '@/features/places/validation';
+import { validatePlaceInput } from '@/features/places/validation';
 import { notifyPartner } from '@/features/push/notifyPartner';
+import { discoveredPlaceInput, formatRating, openInGoogleMaps } from '@/features/search/discoveredPlace';
 import {
   DISCOVERY_CATEGORY_KEYS,
   type DiscoveredPlace,
@@ -18,7 +21,7 @@ import {
   discoverPlace,
 } from '@/features/search/discovery';
 import { useUsers } from '@/features/users/UsersProvider';
-import { colors, spacing } from '@/theme';
+import { colors } from '@/theme';
 
 type AddState = 'idle' | 'adding' | 'added';
 
@@ -27,15 +30,6 @@ const ADD_LABELS: Record<AddState, string> = {
   adding: 'Ajout…',
   added: 'Ajouté',
 };
-
-function formatRating(place: DiscoveredPlace): string {
-  const rating = place.rating.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  return `★ ${rating} · ${place.userRatingCount.toLocaleString('fr-FR')} avis`;
-}
-
-function openInGoogleMaps(uri: string) {
-  Linking.openURL(uri).catch(() => Alert.alert('Oups', 'Impossible d’ouvrir Google Maps.'));
-}
 
 export function DiscoveryPanel() {
   const { user } = useAuth();
@@ -79,17 +73,7 @@ export function DiscoveryPanel() {
 
   async function addToIdeas(place: DiscoveredPlace) {
     if (!user || busy) return;
-    const input = normalizePlaceInput({
-      name: place.name,
-      category: discoveredCategory(place),
-      address: place.address,
-      lat: place.lat,
-      lng: place.lng,
-      googlePlaceId: place.googlePlaceId,
-      status: 'todo',
-      rating: null,
-      comment: null,
-    });
+    const input = discoveredPlaceInput(place);
     const problem = validatePlaceInput(input);
     if (problem) {
       Alert.alert('Oups', problem);
@@ -108,7 +92,7 @@ export function DiscoveryPanel() {
 
   function renderResult() {
     if (searching && !result) {
-      return <ActivityIndicator style={pickerStyles.loader} color={colors.textMuted} />;
+      return <ActivityIndicator style={pickerStyles.loader} color={colors.ink} />;
     }
     if (!result) {
       return (
@@ -119,13 +103,7 @@ export function DiscoveryPanel() {
               <Text style={pickerStyles.emptyText}>Réessaie ou change de catégorie.</Text>
             </View>
           ) : null}
-          <Pressable
-            style={({ pressed }) => [pickerStyles.button, pickerStyles.drawButton, pressed && pickerStyles.pressed]}
-            onPress={discover}
-          >
-            <Ionicons name="sparkles-outline" size={22} color={colors.surface} />
-            <Text style={pickerStyles.buttonText}>Découvrir</Text>
-          </Pressable>
+          <Button label="Découvrir" icon="sparkles-outline" onPress={discover} style={pickerStyles.drawButton} />
         </>
       );
     }
@@ -135,47 +113,35 @@ export function DiscoveryPanel() {
     const current = result;
 
     return (
-      <View style={pickerStyles.card}>
+      <View style={pickerStyles.ticket}>
+        <TicketHeader label="Billet découverte" />
         <View style={pickerStyles.cardHeader}>
-          <Ionicons name={category.icon} size={18} color={colors.textMuted} />
+          <Ionicons name={category.icon} size={18} color={colors.tangerine} />
           <Text style={pickerStyles.cardCategory}>{category.label}</Text>
         </View>
         <Text style={pickerStyles.cardName}>{result.name}</Text>
         <Text style={pickerStyles.cardAddress}>{result.address}</Text>
         <Text style={pickerStyles.cardMeta}>{formatRating(result)}</Text>
         {mapsUri ? (
-          <Pressable onPress={() => openInGoogleMaps(mapsUri)} hitSlop={8}>
-            <Text style={styles.link}>Voir sur Google Maps</Text>
+          <Pressable onPress={() => openInGoogleMaps(mapsUri)} hitSlop={8} accessibilityRole="link">
+            <Text style={pickerStyles.link}>Voir sur Google Maps</Text>
           </Pressable>
         ) : null}
         <View style={pickerStyles.actions}>
-          <Pressable
-            style={({ pressed }) => [
-              pickerStyles.button,
-              pickerStyles.secondaryButton,
-              busy && pickerStyles.disabled,
-              pressed && pickerStyles.pressed,
-            ]}
+          <Button
+            label="Un autre"
+            variant="secondary"
             onPress={discover}
+            loading={searching}
             disabled={busy}
-          >
-            {searching ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <Text style={pickerStyles.secondaryButtonText}>Un autre</Text>
-            )}
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              pickerStyles.button,
-              (addState !== 'idle' || searching) && pickerStyles.disabled,
-              pressed && pickerStyles.pressed,
-            ]}
+            style={pickerStyles.action}
+          />
+          <Button
+            label={ADD_LABELS[addState]}
             onPress={() => addToIdeas(current)}
             disabled={addState !== 'idle' || searching}
-          >
-            <Text style={pickerStyles.buttonText}>{ADD_LABELS[addState]}</Text>
-          </Pressable>
+            style={pickerStyles.action}
+          />
         </View>
       </View>
     );
@@ -185,11 +151,13 @@ export function DiscoveryPanel() {
     <View>
       <Text style={pickerStyles.label}>Catégories</Text>
       <View style={pickerStyles.chips}>
-        {DISCOVERY_CATEGORY_KEYS.map((key) => (
-          <ToggleChip
+        {DISCOVERY_CATEGORY_KEYS.map((key, index) => (
+          <Sticker
             key={key}
             label={CATEGORY_BY_KEY[key].label}
             icon={CATEGORY_BY_KEY[key].icon}
+            tone="mint"
+            tilt={stickerTilt(index)}
             selected={categories.includes(key)}
             onPress={() => toggleCategory(key)}
           />
@@ -201,11 +169,3 @@ export function DiscoveryPanel() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  link: {
-    color: colors.primary,
-    fontWeight: '600',
-    marginTop: spacing.xs,
-  },
-});

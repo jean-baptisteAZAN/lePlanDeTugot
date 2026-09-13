@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextIn
 
 import type { PlaceDetails, PlaceSuggestion } from '@/features/search/googlePlaces';
 import { usePlaceSearch } from '@/features/search/usePlaceSearch';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, stroke } from '@/theme';
 
 type Props = {
   onSelect: (details: PlaceDetails) => void;
@@ -30,22 +30,22 @@ export function PlaceSearch({ onSelect, onCancel }: Props) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.inputRow}>
-          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <Ionicons name="search" size={18} color={colors.inkMuted} />
           <TextInput
             style={styles.input}
             autoFocus
             placeholder="Nom ou adresse (ex : Le Comptoir)"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.inkFaint}
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
             clearButtonMode="while-editing"
             returnKeyType="search"
           />
-          {loading ? <ActivityIndicator size="small" color={colors.textMuted} /> : null}
+          {loading ? <ActivityIndicator size="small" color={colors.ink} /> : null}
         </View>
         {onCancel ? (
-          <Pressable onPress={onCancel} hitSlop={8}>
+          <Pressable onPress={onCancel} hitSlop={8} accessibilityRole="button">
             <Text style={styles.cancel}>Annuler</Text>
           </Pressable>
         ) : null}
@@ -70,7 +70,7 @@ export function PlaceSearch({ onSelect, onCancel }: Props) {
                 {item.secondaryText}
               </Text>
             </View>
-            {selectingId === item.placeId ? <ActivityIndicator size="small" color={colors.textMuted} /> : null}
+            {selectingId === item.placeId ? <ActivityIndicator size="small" color={colors.ink} /> : null}
           </Pressable>
         )}
       />
@@ -81,7 +81,7 @@ export function PlaceSearch({ onSelect, onCancel }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.paper,
   },
   header: {
     flexDirection: 'row',
@@ -95,22 +95,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: stroke,
+    borderColor: colors.ink,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
   },
   input: {
     flex: 1,
     paddingVertical: spacing.md,
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: colors.text,
+    color: colors.ink,
   },
   cancel: {
-    color: colors.primary,
-    fontSize: 16,
+    fontFamily: fonts.display,
+    fontSize: 15,
+    color: colors.cobalt,
   },
   error: {
+    fontFamily: fonts.bold,
     color: colors.danger,
     paddingHorizontal: spacing.lg,
   },
@@ -122,8 +125,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.inkFaint,
   },
   pressed: {
     opacity: 0.6,
@@ -133,12 +136,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   mainText: {
+    fontFamily: fonts.heavy,
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    color: colors.ink,
   },
   secondaryText: {
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: colors.textMuted,
+    color: colors.inkMuted,
   },
 });

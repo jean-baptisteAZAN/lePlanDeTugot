@@ -1,14 +1,12 @@
 import { StyleSheet } from 'react-native';
 
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, hardShadow, radius, spacing, stroke } from '@/theme';
 
 export const pickerStyles = StyleSheet.create({
   label: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: fonts.display,
+    fontSize: 15,
+    color: colors.cobalt,
     marginBottom: spacing.sm,
   },
   chips: {
@@ -17,8 +15,9 @@ export const pickerStyles = StyleSheet.create({
     gap: spacing.sm,
   },
   hint: {
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: colors.textMuted,
+    color: colors.inkMuted,
     marginTop: spacing.sm,
   },
   loader: {
@@ -30,21 +29,29 @@ export const pickerStyles = StyleSheet.create({
     gap: spacing.sm,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
+    fontFamily: fonts.display,
+    fontSize: 20,
+    color: colors.ink,
   },
   emptyText: {
+    fontFamily: fonts.medium,
     fontSize: 15,
-    color: colors.textMuted,
+    color: colors.inkMuted,
     textAlign: 'center',
   },
-  card: {
+  drawButton: {
     marginTop: spacing.xl,
+  },
+  ticket: {
+    marginTop: spacing.xl,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    paddingTop: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.xl,
-    gap: spacing.sm,
+    borderWidth: stroke,
+    borderColor: colors.ink,
+    boxShadow: hardShadow,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -53,65 +60,56 @@ export const pickerStyles = StyleSheet.create({
   },
   cardCategory: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textMuted,
+    fontFamily: fonts.heavy,
+    fontSize: 13,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: colors.tangerine,
   },
   cardName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
+    fontFamily: fonts.display,
+    fontSize: 26,
+    lineHeight: 30,
+    color: colors.ink,
   },
   cardAddress: {
+    fontFamily: fonts.medium,
     fontSize: 15,
-    color: colors.textMuted,
+    color: colors.inkMuted,
   },
   cardMeta: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.ink,
+  },
+  link: {
+    marginTop: spacing.xs,
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.cobalt,
+    textDecorationLine: 'underline',
+  },
+  plusTag: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: colors.lemon,
+    borderWidth: stroke,
+    borderColor: colors.ink,
+    borderRadius: 6,
+    transform: [{ rotate: '4deg' }],
+  },
+  plusTagText: {
+    fontFamily: fonts.display,
     fontSize: 13,
-    color: colors.textMuted,
+    color: colors.ink,
   },
   actions: {
     flexDirection: 'row',
     gap: spacing.md,
     marginTop: spacing.lg,
   },
-  button: {
+  action: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.sm,
-  },
-  drawButton: {
-    marginTop: spacing.xl,
-  },
-  secondaryButton: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  buttonText: {
-    color: colors.surface,
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  secondaryButtonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  disabled: {
-    opacity: 0.4,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });

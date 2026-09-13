@@ -1,9 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { ToggleChip } from '@/components/ToggleChip';
+import { Button } from '@/components/Button';
+import { Sticker, stickerTilt } from '@/components/Sticker';
+import { TicketHeader } from '@/components/TicketHeader';
 import { CATEGORIES, CATEGORY_BY_KEY } from '@/features/places/categories';
 import { pickerStyles } from '@/features/places/pickerStyles';
 import { usePlaces } from '@/features/places/PlacesProvider';
@@ -11,7 +13,7 @@ import { pickRandom, randomCandidates } from '@/features/places/random';
 import type { CategoryKey } from '@/features/places/types';
 import { isSharedWish } from '@/features/places/wishes';
 import { useUsers } from '@/features/users/UsersProvider';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, stroke } from '@/theme';
 
 export function IdeasPanel() {
   const { places, loading } = usePlaces();
@@ -36,7 +38,7 @@ export function IdeasPanel() {
 
   function renderResult() {
     if (loading) {
-      return <ActivityIndicator style={pickerStyles.loader} color={colors.textMuted} />;
+      return <ActivityIndicator style={pickerStyles.loader} color={colors.ink} />;
     }
     if (candidates.length === 0) {
       return (
@@ -47,15 +49,7 @@ export function IdeasPanel() {
       );
     }
     if (!picked) {
-      return (
-        <Pressable
-          style={({ pressed }) => [pickerStyles.button, pickerStyles.drawButton, pressed && pickerStyles.pressed]}
-          onPress={draw}
-        >
-          <Ionicons name="dice-outline" size={22} color={colors.surface} />
-          <Text style={pickerStyles.buttonText}>Tirer au sort</Text>
-        </Pressable>
-      );
+      return <Button label="Tirer au sort" icon="dice-outline" onPress={draw} style={pickerStyles.drawButton} />;
     }
 
     const category = CATEGORY_BY_KEY[picked.category];
@@ -63,34 +57,33 @@ export function IdeasPanel() {
     const selectedId = picked.id;
 
     return (
-      <View style={pickerStyles.card}>
+      <View style={pickerStyles.ticket}>
+        <TicketHeader label="Billet pour ce soir" />
         <View style={pickerStyles.cardHeader}>
-          <Ionicons name={category.icon} size={18} color={colors.textMuted} />
+          <Ionicons name={category.icon} size={18} color={colors.tangerine} />
           <Text style={pickerStyles.cardCategory}>{category.label}</Text>
-          {isSharedWish(picked) ? <Ionicons name="heart" size={16} color={colors.heart} /> : null}
+          {isSharedWish(picked) ? (
+            <View style={pickerStyles.plusTag} accessible accessibilityLabel="Partants tous les deux">
+              <Text style={pickerStyles.plusTagText}>+1</Text>
+            </View>
+          ) : null}
         </View>
         <Text style={pickerStyles.cardName}>{picked.name}</Text>
         <Text style={pickerStyles.cardAddress}>{picked.address}</Text>
         {author ? <Text style={pickerStyles.cardMeta}>Ajouté par {author}</Text> : null}
         <View style={pickerStyles.actions}>
-          <Pressable
-            style={({ pressed }) => [
-              pickerStyles.button,
-              pickerStyles.secondaryButton,
-              candidates.length < 2 && pickerStyles.disabled,
-              pressed && pickerStyles.pressed,
-            ]}
+          <Button
+            label="Un autre"
+            variant="secondary"
             onPress={draw}
             disabled={candidates.length < 2}
-          >
-            <Text style={pickerStyles.secondaryButtonText}>Un autre</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [pickerStyles.button, pressed && pickerStyles.pressed]}
+            style={pickerStyles.action}
+          />
+          <Button
+            label="Voir le lieu"
             onPress={() => router.push({ pathname: '/place/[id]', params: { id: selectedId } })}
-          >
-            <Text style={pickerStyles.buttonText}>Voir le lieu</Text>
-          </Pressable>
+            style={pickerStyles.action}
+          />
         </View>
       </View>
     );
@@ -100,11 +93,13 @@ export function IdeasPanel() {
     <View>
       <Text style={pickerStyles.label}>Catégories</Text>
       <View style={pickerStyles.chips}>
-        {CATEGORIES.map((category) => (
-          <ToggleChip
+        {CATEGORIES.map((category, index) => (
+          <Sticker
             key={category.key}
             label={category.label}
             icon={category.icon}
+            tone="mint"
+            tilt={stickerTilt(index)}
             selected={categories.includes(category.key)}
             onPress={() => toggleCategory(category.key)}
           />
@@ -117,7 +112,7 @@ export function IdeasPanel() {
         <Switch
           value={sharedOnly}
           onValueChange={setSharedOnly}
-          trackColor={{ false: colors.border, true: colors.heart }}
+          trackColor={{ false: colors.inkFaint, true: colors.mint }}
         />
       </View>
 
@@ -133,14 +128,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
     marginTop: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: stroke,
+    borderColor: colors.ink,
   },
   switchLabel: {
     flex: 1,
-    fontSize: 16,
-    color: colors.text,
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.ink,
   },
 });
