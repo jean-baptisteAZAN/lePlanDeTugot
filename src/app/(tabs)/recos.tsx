@@ -21,7 +21,10 @@ export default function RecosScreen() {
   const latest = useRef<{ sources: Place[]; places: Place[] }>({ sources: [], places: [] });
 
   const sources = useMemo(() => pickRecoSources(places), [places]);
-  const sourceKey = sources.map((source) => source.id).join('|');
+  const sourceKey = sources
+    .map((source) => source.id)
+    .sort()
+    .join('|');
 
   useEffect(() => {
     latest.current = { sources, places };
