@@ -15,7 +15,9 @@ export function groupPlacesByCategory(
   sharedOnly: boolean,
 ): PlaceSection[] {
   const visible = places.filter(
-    (place) => (filter === 'all' || place.status === filter) && (!sharedOnly || isSharedWish(place)),
+    (place) =>
+      (filter === 'all' || place.status === filter) &&
+      (!sharedOnly || (place.status === 'todo' && isSharedWish(place))),
   );
   return CATEGORIES.map((category) => ({
     category,

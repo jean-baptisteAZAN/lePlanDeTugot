@@ -8,7 +8,7 @@ import { createPlace } from '@/features/places/api';
 import { CATEGORY_BY_KEY } from '@/features/places/categories';
 import { pickerStyles } from '@/features/places/pickerStyles';
 import { usePlaces } from '@/features/places/PlacesProvider';
-import type { PlaceInput } from '@/features/places/types';
+import { normalizePlaceInput, validatePlaceInput } from '@/features/places/validation';
 import { notifyPartner } from '@/features/push/notifyPartner';
 import {
   DISCOVERY_CATEGORY_KEYS,
@@ -79,8 +79,7 @@ export function DiscoveryPanel() {
 
   async function addToIdeas(place: DiscoveredPlace) {
     if (!user || busy) return;
-    setAddState('adding');
-    const input: PlaceInput = {
+    const input = normalizePlaceInput({
       name: place.name,
       category: discoveredCategory(place),
       address: place.address,
@@ -90,7 +89,13 @@ export function DiscoveryPanel() {
       status: 'todo',
       rating: null,
       comment: null,
-    };
+    });
+    const problem = validatePlaceInput(input);
+    if (problem) {
+      Alert.alert('Oups', problem);
+      return;
+    }
+    setAddState('adding');
     try {
       const id = await createPlace(input);
       void notifyPartner({ id, name: input.name, category: input.category }, users, user.uid);

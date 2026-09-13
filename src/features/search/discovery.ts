@@ -70,6 +70,7 @@ const SEARCH_RADIUS_METERS = 1500;
 const MIN_RATING = 4.3;
 const MIN_RATING_COUNT = 150;
 const MAX_ATTEMPTS = 3;
+const REQUEST_TIMEOUT_MS = 10000;
 const NEARBY_FIELD_MASK = [
   'places.id',
   'places.displayName',
@@ -92,23 +93,34 @@ function shuffled<T>(items: readonly T[]): T[] {
 }
 
 function typesFor(categories: readonly DiscoveryCategory[]): string[] {
-  const selected = categories.length > 0 ? categories : DISCOVERY_CATEGORY_KEYS;
+  const selected =
+    categories.length > 0
+      ? categories
+      : [DISCOVERY_CATEGORY_KEYS[Math.floor(Math.random() * DISCOVERY_CATEGORY_KEYS.length)]];
   return [...new Set(selected.flatMap((category) => DISCOVERY_TYPES[category]))];
 }
 
 async function searchNearby(center: LatLng, includedTypes: readonly string[]): Promise<DiscoveredPlace[]> {
-  const response = await fetch(`${BASE_URL}/places:searchNearby`, {
-    method: 'POST',
-    headers: buildHeaders(NEARBY_FIELD_MASK),
-    body: JSON.stringify({
-      includedTypes,
-      maxResultCount: 20,
-      rankPreference: 'POPULARITY',
-      languageCode: 'fr',
-      regionCode: 'fr',
-      locationRestriction: { circle: { center, radius: SEARCH_RADIUS_METERS } },
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/places:searchNearby`, {
+      method: 'POST',
+      headers: buildHeaders(NEARBY_FIELD_MASK),
+      body: JSON.stringify({
+        includedTypes,
+        maxResultCount: 20,
+        rankPreference: 'POPULARITY',
+        languageCode: 'fr',
+        regionCode: 'fr',
+        locationRestriction: { circle: { center, radius: SEARCH_RADIUS_METERS } },
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) {
     throw new Error(`Places nearby search failed: ${response.status}`);
   }
@@ -138,8 +150,8 @@ export async function discoverPlace(
   categories: readonly DiscoveryCategory[],
   excludedIds: ReadonlySet<string>,
 ): Promise<DiscoveredPlace | null> {
-  const includedTypes = typesFor(categories);
   for (const center of shuffled(ARRONDISSEMENT_CENTERS).slice(0, MAX_ATTEMPTS)) {
+    const includedTypes = typesFor(categories);
     const candidates = (await searchNearby(center, includedTypes)).filter(
       (place) =>
         place.rating >= MIN_RATING &&

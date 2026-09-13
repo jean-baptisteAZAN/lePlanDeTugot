@@ -120,7 +120,7 @@ export default function PlaceDetailScreen() {
   const author = usersById[place.createdBy]?.displayName;
   const createdOn = place.createdAt.toDate().toLocaleDateString('fr-FR');
   const wishLabel =
-    place.status !== 'todo' || !user
+    place.status !== 'todo' || values.status !== 'todo' || !user
       ? null
       : isSharedWish(place)
         ? 'Envie partagée'
