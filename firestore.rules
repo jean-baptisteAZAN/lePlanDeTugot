@@ -40,6 +40,17 @@ service cloud.firestore {
       allow delete: if isMember();
     }
 
+    match /notes/{noteId} {
+      allow read, delete: if isMember();
+      allow create: if isMember()
+        && request.resource.data.keys().hasOnly(['title', 'createdBy', 'createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+    }
+
     match /users/{uid} {
       allow read: if isMember();
       allow update: if isMember()
