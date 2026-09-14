@@ -11,7 +11,7 @@ import { colors, fonts, hardShadow, radius, spacing, stroke } from '@/theme';
 
 const TILTS = ['-1deg', '0.8deg', '-0.4deg', '1.1deg'];
 
-export default function BlaconScreen() {
+export default function BalconScreen() {
   const { notes, loading, error } = useNotes();
   const { usersById } = useUsers();
   const [title, setTitle] = useState('');
@@ -63,7 +63,7 @@ export default function BlaconScreen() {
       return <CenteredMessage text="Impossible de charger les notes" />;
     }
     if (notes.length === 0) {
-      return <CenteredMessage text="Rien sur le Blacon pour l’instant. Note le premier truc dont on a parlé !" />;
+      return <CenteredMessage text="Rien sur le Balcon pour l’instant. Note le premier truc dont on a parlé !" />;
     }
     return (
       <FlatList

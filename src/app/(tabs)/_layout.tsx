@@ -73,9 +73,9 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="blacon"
+        name="balcon"
         options={{
-          title: 'Blacon',
+          title: 'Balcon',
           tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} />,
         }}
       />
