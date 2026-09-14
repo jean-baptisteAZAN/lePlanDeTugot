@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Tabs } from 'expo-router';
 import { Alert, Pressable, StyleSheet } from 'react-native';
 
+import { StampTabBar } from '@/components/StampTabBar';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { colors, fonts, spacing, stroke } from '@/theme';
 
@@ -17,16 +18,12 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <StampTabBar {...props} />}
       screenOptions={{
         sceneStyle: { backgroundColor: colors.paper },
         headerStyle: { backgroundColor: colors.paper },
         headerShadowVisible: false,
         headerTitleStyle: { fontFamily: fonts.display, fontSize: 22, color: colors.ink },
-        tabBarStyle: { backgroundColor: colors.paper, borderTopWidth: stroke, borderTopColor: colors.ink },
-        tabBarLabelStyle: { fontFamily: fonts.display, fontSize: 12 },
-        tabBarActiveTintColor: colors.ink,
-        tabBarInactiveTintColor: colors.inkFaint,
-        tabBarActiveBackgroundColor: colors.lemon,
         headerLeft: () => (
           <Pressable
             onPress={() => router.push('/place/random')}
