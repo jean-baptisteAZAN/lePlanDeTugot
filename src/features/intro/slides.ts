@@ -1,5 +1,3 @@
-import type { StickerTone } from '@/components/Sticker';
-
 export const INTRO_SENTENCES: readonly string[] = [
   'Bon, Blandine.',
   'On a un gros problème.',
@@ -10,10 +8,4 @@ export const INTRO_SENTENCES: readonly string[] = [
   'Et voici la solution que j’ai trouvée :',
 ];
 
-export const INTRO_FEATURES: readonly { label: string; tone: StickerTone }[] = [
-  { label: 'Nos lieux, à faire et déjà faits', tone: 'mint' },
-  { label: 'La carte de Paris avec tout dessus', tone: 'lemon' },
-  { label: '« Moi aussi » quand on est partants', tone: 'tangerine' },
-  { label: '« On fait quoi ce soir ? »', tone: 'cobalt' },
-  { label: 'Des recos inspirées de nos 5 étoiles', tone: 'mint' },
-];
+export const INTRO_FINAL = 'Une super appli pour retrouver et partager nos adresses.';
