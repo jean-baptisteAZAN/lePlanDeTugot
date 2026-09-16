@@ -26,11 +26,12 @@ const ADD_LABELS: Record<AddState, string> = {
 type Props = {
   reco: Reco;
   myUid: string;
+  cityId: string;
 };
 
-export function RecoCard({ reco, myUid }: Props) {
+export function RecoCard({ reco, myUid, cityId }: Props) {
   const { users } = useUsers();
-  const { activeCity } = useCities();
+  const { citiesById } = useCities();
   const [addState, setAddState] = useState<AddState>('idle');
   const { place } = reco;
   const category = CATEGORY_BY_KEY[discoveredCategory(place)];
@@ -46,8 +47,14 @@ export function RecoCard({ reco, myUid }: Props) {
     }
     setAddState('adding');
     try {
-      const id = await createPlace(input, activeCity.id);
-      void notifyPartner({ id, name: input.name, category: input.category }, users, myUid, cityPushLabel(activeCity));
+      const id = await createPlace(input, cityId);
+      const city = citiesById[cityId];
+      void notifyPartner(
+        { id, name: input.name, category: input.category },
+        users,
+        myUid,
+        city ? cityPushLabel(city) : null,
+      );
       setAddState('added');
     } catch {
       setAddState('idle');

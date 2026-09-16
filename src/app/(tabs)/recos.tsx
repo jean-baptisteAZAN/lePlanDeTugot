@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native
 
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { placeCityId } from '@/features/cities/cities';
 import { useCities } from '@/features/cities/CitiesProvider';
 import { usePlaces } from '@/features/places/PlacesProvider';
 import type { Place } from '@/features/places/types';
@@ -48,6 +49,7 @@ export default function RecosScreen() {
       setRefreshing(true);
     } else {
       setLoadState('loading');
+      setGroups([]);
     }
 
     const knownIds = new Set(currentPlaces.flatMap((place) => (place.googlePlaceId ? [place.googlePlaceId] : [])));
@@ -106,7 +108,12 @@ export default function RecosScreen() {
           <Text style={styles.because}>Parce que vous avez adoré</Text>
           <Text style={styles.sourceName}>{group.source.name}</Text>
           {group.recos.map((reco) => (
-            <RecoCard key={reco.place.googlePlaceId} reco={reco} myUid={myUid} />
+            <RecoCard
+              key={reco.place.googlePlaceId}
+              reco={reco}
+              myUid={myUid}
+              cityId={placeCityId(group.source)}
+            />
           ))}
         </View>
       ))}

@@ -63,7 +63,11 @@ export function CitiesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CitiesState>(() => {
     const isCurrent = uid !== null && remote.uid === uid;
-    const remoteCities = isCurrent ? remote.cities.filter((city) => city.id !== PARIS_CITY_ID) : [];
+    const remoteCities = isCurrent
+      ? remote.cities
+          .filter((city) => city.id !== PARIS_CITY_ID)
+          .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+      : [];
     const cities = [PARIS, ...remoteCities];
     const citiesById: Record<string, City> = Object.fromEntries(cities.map((city) => [city.id, city]));
     const wantedId = storedId ?? PARIS_CITY_ID;

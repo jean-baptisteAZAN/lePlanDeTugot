@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
@@ -25,7 +25,9 @@ export default function CitySelectScreen() {
     setMode('saving');
     try {
       await addCity(input);
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      }
     } catch (cause) {
       console.warn('City save failed', cause);
       setMode('search');
@@ -33,34 +35,42 @@ export default function CitySelectScreen() {
     }
   }
 
-  if (mode === 'saving') {
-    return <CenteredMessage loading text="Ajout de la ville…" />;
-  }
+  const saving = mode === 'saving';
 
-  if (mode === 'search') {
-    return <CitySearch onSelect={handleSelect} onCancel={() => setMode('list')} />;
+  let content;
+  if (saving) {
+    content = <CenteredMessage loading text="Ajout de la ville…" />;
+  } else if (mode === 'search') {
+    content = <CitySearch onSelect={handleSelect} onCancel={() => setMode('list')} />;
+  } else {
+    content = (
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {cities.map((city) => {
+          const active = city.id === activeCity.id;
+          return (
+            <Pressable
+              key={city.id}
+              onPress={() => choose(city.id)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              style={({ pressed }) => [styles.row, active && styles.rowActive, pressed && styles.pressed]}
+            >
+              <Ionicons name={active ? 'location' : 'location-outline'} size={20} color={colors.ink} />
+              <Text style={styles.name}>{city.name}</Text>
+              {active ? <Ionicons name="checkmark" size={20} color={colors.ink} /> : null}
+            </Pressable>
+          );
+        })}
+        <Button label="Ajouter une ville" icon="add" variant="secondary" onPress={() => setMode('search')} style={styles.add} />
+      </ScrollView>
+    );
   }
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      {cities.map((city) => {
-        const active = city.id === activeCity.id;
-        return (
-          <Pressable
-            key={city.id}
-            onPress={() => choose(city.id)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            style={({ pressed }) => [styles.row, active && styles.rowActive, pressed && styles.pressed]}
-          >
-            <Ionicons name={active ? 'location' : 'location-outline'} size={20} color={colors.ink} />
-            <Text style={styles.name}>{city.name}</Text>
-            {active ? <Ionicons name="checkmark" size={20} color={colors.ink} /> : null}
-          </Pressable>
-        );
-      })}
-      <Button label="Ajouter une ville" icon="add" variant="secondary" onPress={() => setMode('search')} style={styles.add} />
-    </ScrollView>
+    <>
+      <Stack.Screen options={{ gestureEnabled: !saving }} />
+      {content}
+    </>
   );
 }
 

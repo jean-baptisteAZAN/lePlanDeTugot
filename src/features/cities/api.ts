@@ -1,4 +1,4 @@
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, type Unsubscribe } from 'firebase/firestore';
+import { addDoc, collection, onSnapshot, serverTimestamp, type Unsubscribe } from 'firebase/firestore';
 
 import type { City, CityInput, Coordinates, Viewport } from '@/features/cities/types';
 import { auth, db } from '@/lib/firebase';
@@ -25,7 +25,7 @@ function isViewport(value: unknown): value is Viewport {
 
 export function subscribeCities(onData: (cities: City[]) => void, onError: (error: Error) => void): Unsubscribe {
   return onSnapshot(
-    query(citiesCollection, orderBy('name')),
+    citiesCollection,
     (snapshot) => {
       onData(
         snapshot.docs.flatMap((document) => {

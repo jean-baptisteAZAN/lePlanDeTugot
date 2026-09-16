@@ -20,10 +20,12 @@ const MIN_BIAS_RADIUS_METERS = 5000;
 const MAX_BIAS_RADIUS_METERS = 50000;
 const MIN_REGION_DELTA = 0.02;
 const REGION_PADDING = 1.1;
-const INNER_FRACTION = 0.5;
+const INNER_HALF_SPAN_FRACTION = 0.25;
+const MAX_INNER_HALF_SPAN_KM = 3.5;
+const KM_PER_DEGREE_LATITUDE = 111;
 const EARTH_RADIUS_KM = 6371;
 
-export const PARIS_DEDUPE_RADIUS_KM = 15;
+export const PARIS_DEDUPE_RADIUS_KM = 5;
 
 export function placeCityId(place: Pick<Place, 'cityId'>): string {
   return place.cityId ?? PARIS_CITY_ID;
@@ -61,10 +63,17 @@ export function cityBiasCircle(city: City): { center: Coordinates; radius: numbe
 
 export function randomInnerPoint(city: City): Coordinates {
   const { low, high } = city.viewport;
-  const center = viewportCenter(city);
+  const latHalfSpan = Math.min(
+    (high.latitude - low.latitude) * INNER_HALF_SPAN_FRACTION,
+    MAX_INNER_HALF_SPAN_KM / KM_PER_DEGREE_LATITUDE,
+  );
+  const lngHalfSpan = Math.min(
+    (high.longitude - low.longitude) * INNER_HALF_SPAN_FRACTION,
+    MAX_INNER_HALF_SPAN_KM / (KM_PER_DEGREE_LATITUDE * Math.cos((city.lat * Math.PI) / 180)),
+  );
   return {
-    latitude: center.latitude + (Math.random() - 0.5) * (high.latitude - low.latitude) * INNER_FRACTION,
-    longitude: center.longitude + (Math.random() - 0.5) * (high.longitude - low.longitude) * INNER_FRACTION,
+    latitude: city.lat + (Math.random() * 2 - 1) * latHalfSpan,
+    longitude: city.lng + (Math.random() * 2 - 1) * lngHalfSpan,
   };
 }
 

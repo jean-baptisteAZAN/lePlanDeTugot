@@ -167,7 +167,7 @@ export function DiscoveryPanel() {
         ))}
       </View>
       <Text style={pickerStyles.hint}>
-        Aucune sélection = toutes les catégories · lieux bien notés à {activeCity.name}
+        Aucune sélection = toutes les catégories · lieux bien notés · {activeCity.name}
       </Text>
 
       {renderResult()}
