@@ -6,6 +6,8 @@ import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native'
 import { Button } from '@/components/Button';
 import { Sticker, stickerTilt } from '@/components/Sticker';
 import { TicketHeader } from '@/components/TicketHeader';
+import { placeCityId } from '@/features/cities/cities';
+import { useCities } from '@/features/cities/CitiesProvider';
 import { CATEGORIES, CATEGORY_BY_KEY } from '@/features/places/categories';
 import { pickerStyles } from '@/features/places/pickerStyles';
 import { usePlaces } from '@/features/places/PlacesProvider';
@@ -18,13 +20,18 @@ import { colors, fonts, radius, spacing, stroke } from '@/theme';
 export function IdeasPanel() {
   const { places, loading } = usePlaces();
   const { usersById } = useUsers();
+  const { activeCity } = useCities();
   const [categories, setCategories] = useState<CategoryKey[]>([]);
   const [sharedOnly, setSharedOnly] = useState(false);
   const [pickedId, setPickedId] = useState<string | null>(null);
 
   const candidates = useMemo(
-    () => randomCandidates(places, { categories, sharedOnly }),
-    [places, categories, sharedOnly],
+    () =>
+      randomCandidates(
+        places.filter((place) => placeCityId(place) === activeCity.id),
+        { categories, sharedOnly },
+      ),
+    [places, activeCity.id, categories, sharedOnly],
   );
   const picked = candidates.find((place) => place.id === pickedId) ?? null;
 

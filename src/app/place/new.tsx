@@ -43,7 +43,13 @@ export default function NewPlaceScreen() {
   }
 
   if (searching || !values) {
-    return <PlaceSearch onSelect={handleSelect} onCancel={values ? () => setSearching(false) : () => router.back()} />;
+    return (
+      <PlaceSearch
+        city={activeCity}
+        onSelect={handleSelect}
+        onCancel={values ? () => setSearching(false) : () => router.back()}
+      />
+    );
   }
 
   return (

@@ -5,6 +5,8 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { placeCityId } from '@/features/cities/cities';
+import { useCities } from '@/features/cities/CitiesProvider';
 import { deletePlace, placeExists, updatePlace } from '@/features/places/api';
 import { PlaceForm } from '@/features/places/PlaceForm';
 import { usePlace, usePlaces } from '@/features/places/PlacesProvider';
@@ -38,6 +40,7 @@ export default function PlaceDetailScreen() {
   const place = usePlace(id);
   const { loading } = usePlaces();
   const { usersById } = useUsers();
+  const { citiesById, activeCity } = useCities();
   const [edited, setEdited] = useState<PlaceInput | null>(null);
   const [searching, setSearching] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -114,7 +117,13 @@ export default function PlaceDetailScreen() {
   }
 
   if (searching) {
-    return <PlaceSearch onSelect={handleLocationSelect} onCancel={() => setSearching(false)} />;
+    return (
+      <PlaceSearch
+        city={citiesById[placeCityId(place)] ?? activeCity}
+        onSelect={handleLocationSelect}
+        onCancel={() => setSearching(false)}
+      />
+    );
   }
 
   const author = usersById[place.createdBy]?.displayName;

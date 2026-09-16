@@ -5,7 +5,6 @@ import type { CityInput, Viewport } from '@/features/cities/types';
 import { env } from '@/lib/env';
 
 export const BASE_URL = 'https://places.googleapis.com/v1';
-const PARIS_CENTER = { latitude: 48.8566, longitude: 2.3522 };
 const DETAILS_FIELD_MASK = 'id,displayName,formattedAddress,location,types,primaryType';
 const CITY_DETAILS_FIELD_MASK = 'id,displayName,location,viewport';
 const FALLBACK_VIEWPORT_DELTA = 0.05;
@@ -24,6 +23,11 @@ export type PlaceDetails = {
   lng: number;
   primaryType: string | null;
   types: string[];
+};
+
+export type SearchBias = {
+  center: { latitude: number; longitude: number };
+  radius: number;
 };
 
 type AutocompleteResponse = {
@@ -98,17 +102,13 @@ async function requestSuggestions(body: Record<string, unknown>, signal?: AbortS
   });
 }
 
-export function autocomplete(input: string, sessionToken: string, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
-  return requestSuggestions(
-    {
-      input,
-      sessionToken,
-      languageCode: 'fr',
-      includedRegionCodes: ['fr'],
-      locationBias: { circle: { center: PARIS_CENTER, radius: 15000 } },
-    },
-    signal,
-  );
+export function autocomplete(
+  input: string,
+  sessionToken: string,
+  bias: SearchBias,
+  signal?: AbortSignal,
+): Promise<PlaceSuggestion[]> {
+  return requestSuggestions({ input, sessionToken, languageCode: 'fr', locationBias: { circle: bias } }, signal);
 }
 
 export function autocompleteCities(

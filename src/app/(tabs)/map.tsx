@@ -1,18 +1,16 @@
 import { router } from 'expo-router';
+import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import { Fab } from '@/components/Fab';
+import { cityRegion, placeCityId } from '@/features/cities/cities';
+import { useCities } from '@/features/cities/CitiesProvider';
 import { usePlaces } from '@/features/places/PlacesProvider';
 import type { Place } from '@/features/places/types';
 import { colors, fonts, spacing, stroke } from '@/theme';
 
-const PARIS_REGION = {
-  latitude: 48.8566,
-  longitude: 2.3422,
-  latitudeDelta: 0.1,
-  longitudeDelta: 0.1,
-};
+const REGION_ANIMATION_MS = 400;
 
 function describe(place: Place): string {
   if (place.status === 'todo') {
@@ -24,11 +22,22 @@ function describe(place: Place): string {
 
 export default function MapScreen() {
   const { places } = usePlaces();
+  const { activeCity } = useCities();
+  const mapRef = useRef<MapView>(null);
+  const initialRegion = useRef(cityRegion(activeCity)).current;
+  const cityPlaces = useMemo(
+    () => places.filter((place) => placeCityId(place) === activeCity.id),
+    [places, activeCity.id],
+  );
+
+  useEffect(() => {
+    mapRef.current?.animateToRegion(cityRegion(activeCity), REGION_ANIMATION_MS);
+  }, [activeCity.id]);
 
   return (
     <View style={styles.container}>
-      <MapView style={StyleSheet.absoluteFill} initialRegion={PARIS_REGION}>
-        {places.map((place) => (
+      <MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={initialRegion}>
+        {cityPlaces.map((place) => (
           <Marker
             // Status in the key forces a remount: iOS does not repaint pinColor changes.
             key={`${place.id}-${place.status}`}

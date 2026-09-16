@@ -8,6 +8,8 @@ import { Fab } from '@/components/Fab';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { Sticker } from '@/components/Sticker';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { placeCityId } from '@/features/cities/cities';
+import { useCities } from '@/features/cities/CitiesProvider';
 import { groupPlacesByCategory, type PlaceSection, type StatusFilter } from '@/features/places/grouping';
 import { PlaceRow } from '@/features/places/PlaceRow';
 import { usePlaces } from '@/features/places/PlacesProvider';
@@ -29,11 +31,17 @@ export default function PlacesListScreen() {
   const { user } = useAuth();
   const { places, loading, error } = usePlaces();
   const { usersById } = useUsers();
+  const { activeCity } = useCities();
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [sharedOnly, setSharedOnly] = useState(false);
   const sections = useMemo(
-    () => groupPlacesByCategory(places, filter, sharedOnly),
-    [places, filter, sharedOnly],
+    () =>
+      groupPlacesByCategory(
+        places.filter((place) => placeCityId(place) === activeCity.id),
+        filter,
+        sharedOnly,
+      ),
+    [places, activeCity.id, filter, sharedOnly],
   );
 
   if (!user) {
