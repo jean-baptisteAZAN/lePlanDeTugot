@@ -1,11 +1,14 @@
 import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 
+import type { CityInput, Viewport } from '@/features/cities/types';
 import { env } from '@/lib/env';
 
 export const BASE_URL = 'https://places.googleapis.com/v1';
 const PARIS_CENTER = { latitude: 48.8566, longitude: 2.3522 };
 const DETAILS_FIELD_MASK = 'id,displayName,formattedAddress,location,types,primaryType';
+const CITY_DETAILS_FIELD_MASK = 'id,displayName,location,viewport';
+const FALLBACK_VIEWPORT_DELTA = 0.05;
 
 export type PlaceSuggestion = {
   placeId: string;
@@ -45,6 +48,13 @@ type DetailsResponse = {
   primaryType?: string;
 };
 
+type CityDetailsResponse = {
+  id: string;
+  displayName?: { text: string };
+  location?: { latitude: number; longitude: number };
+  viewport?: Viewport;
+};
+
 export function newSessionToken(): string {
   return Crypto.randomUUID();
 }
@@ -64,22 +74,12 @@ export function buildHeaders(fieldMask?: string): Record<string, string> {
   return headers;
 }
 
-export async function autocomplete(
-  input: string,
-  sessionToken: string,
-  signal?: AbortSignal,
-): Promise<PlaceSuggestion[]> {
+async function requestSuggestions(body: Record<string, unknown>, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
   const response = await fetch(`${BASE_URL}/places:autocomplete`, {
     method: 'POST',
     signal,
     headers: buildHeaders(),
-    body: JSON.stringify({
-      input,
-      sessionToken,
-      languageCode: 'fr',
-      includedRegionCodes: ['fr'],
-      locationBias: { circle: { center: PARIS_CENTER, radius: 15000 } },
-    }),
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
     throw new Error(`Places autocomplete failed: ${response.status}`);
@@ -98,11 +98,36 @@ export async function autocomplete(
   });
 }
 
-export async function getPlaceDetails(placeId: string, sessionToken: string): Promise<PlaceDetails> {
-  const url =
+export function autocomplete(input: string, sessionToken: string, signal?: AbortSignal): Promise<PlaceSuggestion[]> {
+  return requestSuggestions(
+    {
+      input,
+      sessionToken,
+      languageCode: 'fr',
+      includedRegionCodes: ['fr'],
+      locationBias: { circle: { center: PARIS_CENTER, radius: 15000 } },
+    },
+    signal,
+  );
+}
+
+export function autocompleteCities(
+  input: string,
+  sessionToken: string,
+  signal?: AbortSignal,
+): Promise<PlaceSuggestion[]> {
+  return requestSuggestions({ input, sessionToken, languageCode: 'fr', includedPrimaryTypes: ['(cities)'] }, signal);
+}
+
+function detailsUrl(placeId: string, sessionToken: string): string {
+  return (
     `${BASE_URL}/places/${encodeURIComponent(placeId)}` +
-    `?sessionToken=${encodeURIComponent(sessionToken)}&languageCode=fr`;
-  const response = await fetch(url, { headers: buildHeaders(DETAILS_FIELD_MASK) });
+    `?sessionToken=${encodeURIComponent(sessionToken)}&languageCode=fr`
+  );
+}
+
+export async function getPlaceDetails(placeId: string, sessionToken: string): Promise<PlaceDetails> {
+  const response = await fetch(detailsUrl(placeId, sessionToken), { headers: buildHeaders(DETAILS_FIELD_MASK) });
   if (!response.ok) {
     throw new Error(`Places details failed: ${response.status}`);
   }
@@ -118,5 +143,27 @@ export async function getPlaceDetails(placeId: string, sessionToken: string): Pr
     lng: json.location.longitude,
     primaryType: json.primaryType ?? null,
     types: json.types ?? [],
+  };
+}
+
+export async function getCityDetails(placeId: string, sessionToken: string): Promise<CityInput> {
+  const response = await fetch(detailsUrl(placeId, sessionToken), { headers: buildHeaders(CITY_DETAILS_FIELD_MASK) });
+  if (!response.ok) {
+    throw new Error(`Places city details failed: ${response.status}`);
+  }
+  const json = (await response.json()) as CityDetailsResponse;
+  if (!json.location) {
+    throw new Error('City has no location');
+  }
+  const { latitude, longitude } = json.location;
+  return {
+    name: json.displayName?.text ?? '',
+    lat: latitude,
+    lng: longitude,
+    viewport: json.viewport ?? {
+      low: { latitude: latitude - FALLBACK_VIEWPORT_DELTA, longitude: longitude - FALLBACK_VIEWPORT_DELTA },
+      high: { latitude: latitude + FALLBACK_VIEWPORT_DELTA, longitude: longitude + FALLBACK_VIEWPORT_DELTA },
+    },
+    googlePlaceId: json.id,
   };
 }

@@ -11,7 +11,7 @@ service cloud.firestore {
     function isValidPlace(data) {
       return data.keys().hasOnly([
           'name', 'category', 'address', 'lat', 'lng', 'googlePlaceId',
-          'status', 'rating', 'comment', 'createdBy', 'createdAt', 'updatedAt', 'likedBy'
+          'status', 'rating', 'comment', 'createdBy', 'createdAt', 'updatedAt', 'likedBy', 'cityId'
         ])
         && data.name is string && data.name.size() > 0 && data.name.size() <= 200
         && data.category in ['resto', 'bar', 'cafe', 'activite', 'culture', 'autre']
@@ -23,8 +23,16 @@ service cloud.firestore {
           || (data.status == 'done' && data.rating is int && data.rating >= 1 && data.rating <= 5))
         && (data.comment == null || (data.comment is string && data.comment.size() <= 2000))
         && (!('likedBy' in data) || (data.likedBy is list && data.likedBy.size() <= 2))
+        && (!('cityId' in data) || (data.cityId is string && data.cityId.size() > 0 && data.cityId.size() <= 100))
         && data.createdBy is string
         && data.updatedAt == request.time;
+    }
+
+    function isCoordinates(point) {
+      return point is map
+        && point.keys().hasOnly(['latitude', 'longitude'])
+        && point.latitude is number
+        && point.longitude is number;
     }
 
     match /places/{placeId} {
@@ -38,6 +46,25 @@ service cloud.firestore {
         && request.resource.data.createdBy == resource.data.createdBy
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isMember();
+    }
+
+    match /cities/{cityId} {
+      allow read: if isMember();
+      allow create: if isMember()
+        && cityId != 'paris'
+        && request.resource.data.keys().hasOnly(['name', 'lat', 'lng', 'viewport', 'googlePlaceId', 'createdBy', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.viewport is map
+        && request.resource.data.viewport.keys().hasOnly(['low', 'high'])
+        && isCoordinates(request.resource.data.viewport.low)
+        && isCoordinates(request.resource.data.viewport.high)
+        && (request.resource.data.googlePlaceId == null || request.resource.data.googlePlaceId is string)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
     }
 
     match /notes/{noteId} {

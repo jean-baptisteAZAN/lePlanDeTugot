@@ -1,22 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-  autocomplete,
-  getPlaceDetails,
-  newSessionToken,
-  type PlaceDetails,
-  type PlaceSuggestion,
-} from '@/features/search/googlePlaces';
+import { newSessionToken, type PlaceSuggestion } from '@/features/search/googlePlaces';
 
 const DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;
 
-export function usePlaceSearch() {
+export type SuggestFn = (input: string, sessionToken: string, signal: AbortSignal) => Promise<PlaceSuggestion[]>;
+
+export type DetailsFn<T> = (placeId: string, sessionToken: string) => Promise<T>;
+
+export function useGoogleSearch<T>(suggest: SuggestFn, details: DetailsFn<T>) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionToken = useRef(newSessionToken());
+  const latest = useRef({ suggest, details });
+
+  useEffect(() => {
+    latest.current = { suggest, details };
+  });
 
   useEffect(() => {
     const input = query.trim();
@@ -29,7 +32,8 @@ export function usePlaceSearch() {
     const controller = new AbortController();
     setLoading(true);
     const timer = setTimeout(() => {
-      autocomplete(input, sessionToken.current, controller.signal)
+      latest.current
+        .suggest(input, sessionToken.current, controller.signal)
         .then((results) => {
           if (controller.signal.aborted) return;
           setSuggestions(results);
@@ -48,10 +52,10 @@ export function usePlaceSearch() {
     };
   }, [query]);
 
-  const select = useCallback(async (placeId: string): Promise<PlaceDetails> => {
-    const details = await getPlaceDetails(placeId, sessionToken.current);
+  const select = useCallback(async (placeId: string): Promise<T> => {
+    const value = await latest.current.details(placeId, sessionToken.current);
     sessionToken.current = newSessionToken();
-    return details;
+    return value;
   }, []);
 
   return { query, setQuery, suggestions, loading, error, select };

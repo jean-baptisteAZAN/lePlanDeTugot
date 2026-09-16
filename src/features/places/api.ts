@@ -19,13 +19,14 @@ import { auth, db } from '@/lib/firebase';
 
 const placesCollection = collection(db, 'places');
 
-export async function createPlace(input: PlaceInput): Promise<string> {
+export async function createPlace(input: PlaceInput, cityId: string): Promise<string> {
   const uid = auth.currentUser?.uid;
   if (!uid) {
     throw new Error('Not authenticated');
   }
   const ref = await addDoc(placesCollection, {
     ...input,
+    cityId,
     createdBy: uid,
     likedBy: [],
     createdAt: serverTimestamp(),
@@ -57,7 +58,12 @@ export function subscribePlaces(
       onData(
         snapshot.docs.map((document) => {
           const data = document.data({ serverTimestamps: 'estimate' }) as Omit<Place, 'id'>;
-          return { ...data, id: document.id, likedBy: Array.isArray(data.likedBy) ? data.likedBy : [] };
+          return {
+            ...data,
+            id: document.id,
+            likedBy: Array.isArray(data.likedBy) ? data.likedBy : [],
+            cityId: typeof data.cityId === 'string' ? data.cityId : null,
+          };
         }),
       );
     },

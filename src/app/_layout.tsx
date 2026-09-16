@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider';
+import { CitiesProvider, useCities } from '@/features/cities/CitiesProvider';
 import { IntroProvider, useIntro } from '@/features/intro/IntroProvider';
 import { PlacesProvider } from '@/features/places/PlacesProvider';
 import { usePushSetup } from '@/features/push/usePushSetup';
@@ -22,7 +23,9 @@ export default function RootLayout() {
       <AuthProvider>
         <UsersProvider>
           <PlacesProvider>
-            <RootNavigator />
+            <CitiesProvider>
+              <RootNavigator />
+            </CitiesProvider>
           </PlacesProvider>
         </UsersProvider>
         <StatusBar style="dark" />
@@ -35,8 +38,9 @@ function RootNavigator() {
   usePushSetup();
   const { user, initializing } = useAuth();
   const { seen } = useIntro();
+  const { ready: citiesReady } = useCities();
 
-  if (initializing || seen === null) {
+  if (initializing || seen === null || !citiesReady) {
     return <CenteredMessage loading text="" />;
   }
 
@@ -70,6 +74,11 @@ function RootNavigator() {
           name="place/random"
           dangerouslySingular
           options={{ presentation: 'modal', title: 'On fait quoi ce soir ?' }}
+        />
+        <Stack.Screen
+          name="city/select"
+          dangerouslySingular
+          options={{ presentation: 'modal', title: 'Villes' }}
         />
       </Stack.Protected>
     </Stack>

@@ -4,6 +4,7 @@ import { Alert, Pressable, StyleSheet } from 'react-native';
 
 import { StampTabBar } from '@/components/StampTabBar';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { CitySwitcher } from '@/features/cities/CitySwitcher';
 import { colors, fonts, spacing, stroke } from '@/theme';
 
 export default function TabsLayout() {
@@ -52,6 +53,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Liste',
+          headerTitle: () => <CitySwitcher />,
           tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />,
         }}
       />
@@ -59,6 +61,7 @@ export default function TabsLayout() {
         name="map"
         options={{
           title: 'Carte',
+          headerTitle: () => <CitySwitcher />,
           tabBarIcon: ({ color, size }) => <Ionicons name="map-outline" size={size} color={color} />,
         }}
       />
@@ -66,6 +69,7 @@ export default function TabsLayout() {
         name="recos"
         options={{
           title: 'Recos',
+          headerTitle: () => <CitySwitcher />,
           tabBarIcon: ({ color, size }) => <Ionicons name="sparkles-outline" size={size} color={color} />,
         }}
       />

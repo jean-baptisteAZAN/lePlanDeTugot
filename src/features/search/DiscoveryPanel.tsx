@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { Sticker, stickerTilt } from '@/components/Sticker';
 import { TicketHeader } from '@/components/TicketHeader';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useCities } from '@/features/cities/CitiesProvider';
 import { createPlace } from '@/features/places/api';
 import { CATEGORY_BY_KEY } from '@/features/places/categories';
 import { pickerStyles } from '@/features/places/pickerStyles';
@@ -35,6 +36,7 @@ export function DiscoveryPanel() {
   const { user } = useAuth();
   const { places } = usePlaces();
   const { users } = useUsers();
+  const { activeCity } = useCities();
   const [categories, setCategories] = useState<DiscoveryCategory[]>([]);
   const [result, setResult] = useState<DiscoveredPlace | null>(null);
   const [searching, setSearching] = useState(false);
@@ -81,7 +83,7 @@ export function DiscoveryPanel() {
     }
     setAddState('adding');
     try {
-      const id = await createPlace(input);
+      const id = await createPlace(input, activeCity.id);
       void notifyPartner({ id, name: input.name, category: input.category }, users, user.uid);
       setAddState('added');
     } catch {
