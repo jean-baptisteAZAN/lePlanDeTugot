@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { Sticker, stickerTilt } from '@/components/Sticker';
 import { TicketHeader } from '@/components/TicketHeader';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { cityPushLabel } from '@/features/cities/cities';
 import { useCities } from '@/features/cities/CitiesProvider';
 import { createPlace } from '@/features/places/api';
 import { CATEGORY_BY_KEY } from '@/features/places/categories';
@@ -59,7 +60,7 @@ export function DiscoveryPanel() {
     setSearching(true);
     setNotFound(false);
     try {
-      const found = await discoverPlace(categories, new Set([...knownIds, ...proposedIds.current]));
+      const found = await discoverPlace(categories, new Set([...knownIds, ...proposedIds.current]), activeCity);
       if (found) {
         proposedIds.current.add(found.googlePlaceId);
         setAddState('idle');
@@ -84,7 +85,7 @@ export function DiscoveryPanel() {
     setAddState('adding');
     try {
       const id = await createPlace(input, activeCity.id);
-      void notifyPartner({ id, name: input.name, category: input.category }, users, user.uid);
+      void notifyPartner({ id, name: input.name, category: input.category }, users, user.uid, cityPushLabel(activeCity));
       setAddState('added');
     } catch {
       setAddState('idle');
@@ -165,7 +166,9 @@ export function DiscoveryPanel() {
           />
         ))}
       </View>
-      <Text style={pickerStyles.hint}>Aucune sélection = toutes les catégories · lieux bien notés dans Paris</Text>
+      <Text style={pickerStyles.hint}>
+        Aucune sélection = toutes les catégories · lieux bien notés à {activeCity.name}
+      </Text>
 
       {renderResult()}
     </View>

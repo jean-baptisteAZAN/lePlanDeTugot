@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { cityPushLabel } from '@/features/cities/cities';
 import { useCities } from '@/features/cities/CitiesProvider';
 import { createPlace } from '@/features/places/api';
 import { CATEGORY_BY_KEY } from '@/features/places/categories';
@@ -46,7 +47,7 @@ export function RecoCard({ reco, myUid }: Props) {
     setAddState('adding');
     try {
       const id = await createPlace(input, activeCity.id);
-      void notifyPartner({ id, name: input.name, category: input.category }, users, myUid);
+      void notifyPartner({ id, name: input.name, category: input.category }, users, myUid, cityPushLabel(activeCity));
       setAddState('added');
     } catch {
       setAddState('idle');

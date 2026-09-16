@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native
 
 import { CenteredMessage } from '@/components/CenteredMessage';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useCities } from '@/features/cities/CitiesProvider';
 import { usePlaces } from '@/features/places/PlacesProvider';
 import type { Place } from '@/features/places/types';
 import { RecoCard } from '@/features/recos/RecoCard';
@@ -14,13 +15,14 @@ type LoadState = 'loading' | 'ready' | 'error';
 export default function RecosScreen() {
   const { user } = useAuth();
   const { places, loading: placesLoading } = usePlaces();
+  const { activeCity } = useCities();
   const [groups, setGroups] = useState<RecoGroup[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [refreshing, setRefreshing] = useState(false);
   const requestId = useRef(0);
   const latest = useRef<{ sources: Place[]; places: Place[] }>({ sources: [], places: [] });
 
-  const sources = useMemo(() => pickRecoSources(places), [places]);
+  const sources = useMemo(() => pickRecoSources(places, activeCity.id), [places, activeCity.id]);
   const sourceKey = sources
     .map((source) => source.id)
     .sort()

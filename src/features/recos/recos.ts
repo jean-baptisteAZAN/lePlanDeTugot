@@ -1,3 +1,4 @@
+import { placeCityId } from '@/features/cities/cities';
 import type { Place } from '@/features/places/types';
 import {
   categoryTypes,
@@ -25,9 +26,15 @@ export type RecoGroup = {
   recos: Reco[];
 };
 
-export function pickRecoSources(places: readonly Place[]): Place[] {
+export function pickRecoSources(places: readonly Place[], cityId: string): Place[] {
   return places
-    .filter((place) => place.status === 'done' && place.rating === 5 && isDiscoveryCategory(place.category))
+    .filter(
+      (place) =>
+        placeCityId(place) === cityId &&
+        place.status === 'done' &&
+        place.rating === 5 &&
+        isDiscoveryCategory(place.category),
+    )
     .sort((a, b) => b.updatedAt.toMillis() - a.updatedAt.toMillis())
     .slice(0, MAX_SOURCES);
 }

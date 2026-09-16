@@ -8,11 +8,15 @@ export async function notifyPartner(
   place: Pick<Place, 'id' | 'name' | 'category'>,
   users: readonly AppUser[],
   myUid: string,
+  cityName: string | null,
 ): Promise<void> {
   try {
     const me = users.find((appUser) => appUser.id === myUid);
     const partner = users.find((appUser) => appUser.id !== myUid);
     if (!partner?.expoPushToken) return;
+
+    const categoryLabel = CATEGORY_BY_KEY[place.category].label;
+    const details = cityName ? `${categoryLabel}, ${cityName}` : categoryLabel;
 
     const response = await fetch(EXPO_PUSH_URL, {
       method: 'POST',
@@ -20,7 +24,7 @@ export async function notifyPartner(
       body: JSON.stringify({
         to: partner.expoPushToken,
         title: 'Nouveau lieu',
-        body: `${me?.displayName ?? 'Quelqu’un'} a ajouté ${place.name} (${CATEGORY_BY_KEY[place.category].label})`,
+        body: `${me?.displayName ?? 'Quelqu’un'} a ajouté ${place.name} (${details})`,
         sound: 'default',
         data: { placeId: place.id },
       }),

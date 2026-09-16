@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import { cityPushLabel } from '@/features/cities/cities';
 import { useCities } from '@/features/cities/CitiesProvider';
 import { createPlace } from '@/features/places/api';
 import { suggestCategory } from '@/features/places/categories';
@@ -37,7 +38,7 @@ export default function NewPlaceScreen() {
   async function handleSubmit(input: PlaceInput) {
     const id = await createPlace(input, activeCity.id);
     if (user) {
-      void notifyPartner({ id, name: input.name, category: input.category }, users, user.uid);
+      void notifyPartner({ id, name: input.name, category: input.category }, users, user.uid, cityPushLabel(activeCity));
     }
     router.back();
   }

@@ -1,3 +1,5 @@
+import { PARIS_CITY_ID, randomInnerPoint } from '@/features/cities/cities';
+import type { City } from '@/features/cities/types';
 import { suggestCategory } from '@/features/places/categories';
 import type { CategoryKey } from '@/features/places/types';
 import { BASE_URL, buildHeaders } from '@/features/search/googlePlaces';
@@ -100,6 +102,13 @@ function shuffled<T>(items: readonly T[]): T[] {
   return copy;
 }
 
+function searchCenters(city: City): LatLng[] {
+  if (city.id === PARIS_CITY_ID) {
+    return shuffled(ARRONDISSEMENT_CENTERS).slice(0, MAX_ATTEMPTS);
+  }
+  return Array.from({ length: MAX_ATTEMPTS }, () => randomInnerPoint(city));
+}
+
 function typesFor(categories: readonly DiscoveryCategory[]): string[] {
   const selected =
     categories.length > 0
@@ -161,8 +170,9 @@ export async function searchNearby(
 export async function discoverPlace(
   categories: readonly DiscoveryCategory[],
   excludedIds: ReadonlySet<string>,
+  city: City,
 ): Promise<DiscoveredPlace | null> {
-  for (const center of shuffled(ARRONDISSEMENT_CENTERS).slice(0, MAX_ATTEMPTS)) {
+  for (const center of searchCenters(city)) {
     const includedTypes = typesFor(categories);
     const candidates = (await searchNearby(center, includedTypes)).filter(
       (place) =>
