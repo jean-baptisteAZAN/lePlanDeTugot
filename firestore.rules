@@ -78,6 +78,28 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
     }
 
+    match /videos/{videoId} {
+      allow read, delete: if isMember();
+      allow create: if isMember()
+        && request.resource.data.keys().hasOnly([
+            'videoId', 'url', 'title', 'channel', 'thumbnailUrl', 'comment', 'createdBy', 'createdAt'
+          ])
+        && request.resource.data.videoId is string
+        && request.resource.data.videoId.size() > 0
+        && request.resource.data.videoId.size() <= 50
+        && request.resource.data.url is string
+        && request.resource.data.url.size() <= 500
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && (request.resource.data.channel == null || request.resource.data.channel is string)
+        && (request.resource.data.thumbnailUrl == null || request.resource.data.thumbnailUrl is string)
+        && (request.resource.data.comment == null
+          || (request.resource.data.comment is string && request.resource.data.comment.size() <= 2000))
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+    }
+
     match /users/{uid} {
       allow read: if isMember();
       allow update: if isMember()

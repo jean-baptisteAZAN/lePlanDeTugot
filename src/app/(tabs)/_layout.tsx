@@ -80,6 +80,13 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="videos"
+        options={{
+          title: 'Vidéos',
+          tabBarIcon: ({ color, size }) => <Ionicons name="logo-youtube" size={size} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
