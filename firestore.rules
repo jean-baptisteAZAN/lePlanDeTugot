@@ -5,7 +5,7 @@ service cloud.firestore {
 
     function isMember() {
       return request.auth != null
-        && request.auth.uid in ['8UvdSScymWVOMe2Qyi5YaB6sM6B3', 'G1nr3j7i3yPMVuzlnbpP6ix6J8L2'];
+        && request.auth.uid in ['KCpir6VdbIRoNuwqVQnZ8M0P78X2', 'G1nr3j7i3yPMVuzlnbpP6ix6J8L2'];
     }
 
     function isValidPlace(data) {
